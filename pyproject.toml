@@ -1,0 +1,25 @@
+[project]
+name = "dashmint-synthetic-data"
+version = "0.1.0"
+description = "Dataset-first synthetic banking data pipeline"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=1.0",
+  "openpyxl>=3.1",
+  "python-dotenv>=1.0",
+]
+
+[project.scripts]
+mockdata = "synthetic_data_pipeline.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# Pyrefly (Meta's type checker used by VS Code extension) — teach it that
+# api/, worker/, and shared/ are each Python source roots so imports like
+# `from app.routers import ...` (which resolve relative to api/) resolve
+# correctly in the IDE. At runtime these are correct because Docker sets
+# the working directory to each service's subfolder.
+[tool.pyrefly]
+search_path = ["api", "worker", "shared"]

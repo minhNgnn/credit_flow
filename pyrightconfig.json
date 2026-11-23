@@ -1,0 +1,15 @@
+{
+  "extraPaths": [
+    "api",
+    "worker",
+    "shared"
+  ],
+  "exclude": [
+    ".worktrees",
+    ".venv",
+    "node_modules",
+    "**/__pycache__"
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic"
+}
