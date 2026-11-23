@@ -3,10 +3,12 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { LatencyEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 export default function LatencyTree({ latency }: { latency: LatencyEntry[] }) {
+  const { tv } = useI18n();
   if (latency.length === 0) {
-    return <div className="text-sm text-muted-foreground">Không có dữ liệu latency (Langfuse chưa bật hoặc chưa có trace).</div>;
+    return <div className="text-sm text-muted-foreground">{tv("Không có dữ liệu latency (Langfuse chưa bật hoặc chưa có trace).")}</div>;
   }
   const data = latency.slice(0, 20).map((l) => ({
     name: l.name,

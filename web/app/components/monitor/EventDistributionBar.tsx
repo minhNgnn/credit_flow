@@ -3,9 +3,11 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { EventDistEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 export default function EventDistributionBar({ event_distribution }: { event_distribution: EventDistEntry[] }) {
-  if (event_distribution.length === 0) return <div className="text-sm text-muted-foreground">Chưa có sự kiện.</div>;
+  const { tv } = useI18n();
+  if (event_distribution.length === 0) return <div className="text-sm text-muted-foreground">{tv("Chưa có sự kiện.")}</div>;
   const data = event_distribution.map((d) => ({ name: d.event_type, n: d.n }));
   return (
     <div className="h-56">

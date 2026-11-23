@@ -5,8 +5,10 @@ import { useParams } from "next/navigation";
 
 import TraceGantt from "../../../components/observability/TraceGantt";
 import { fetchLangfuseTrace, type LangfuseTraceBlob } from "../../../lib/observability";
+import { useI18n } from "../../../lib/i18n";
 
 export default function TraceDetail() {
+  const { tv } = useI18n();
   const { caseId } = useParams<{ caseId: string }>();
   const [blob, setBlob] = useState<LangfuseTraceBlob | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -18,16 +20,16 @@ export default function TraceDetail() {
   }, [caseId]);
 
   if (err) {
-    return <div className="text-sm text-destructive-foreground">Lỗi tải trace: {err}</div>;
+    return <div className="text-sm text-destructive-foreground">{tv("Lỗi tải trace")}: {err}</div>;
   }
-  if (!blob) return <div className="text-sm text-muted-foreground">Đang tải…</div>;
+  if (!blob) return <div className="text-sm text-muted-foreground">{tv("Đang tải…")}</div>;
   if (!blob.enabled) {
-    return <div className="text-sm text-muted-foreground">Tính năng quan sát chưa bật. Đặt OBSERVABILITY_ENABLED=true và LANGFUSE_HOST để dùng được.</div>;
+    return <div className="text-sm text-muted-foreground">{tv("Tính năng quan sát chưa bật. Đặt OBSERVABILITY_ENABLED=true và LANGFUSE_HOST để dùng được.")}</div>;
   }
   if (!blob.trace) {
     return (
       <div className="text-sm text-muted-foreground">
-        Chưa có vết chạy Langfuse cho hồ sơ {caseId}. (Có thể worker chưa chạy analyze cho hồ sơ này, hoặc Langfuse chưa nhận được.)
+        {tv("Chưa có vết chạy Langfuse cho hồ sơ {id}. (Có thể worker chưa chạy analyze cho hồ sơ này, hoặc Langfuse chưa nhận được.)", { id: caseId })}
         {blob.reason ? ` ${blob.reason}` : ""}
       </div>
     );
@@ -51,9 +53,9 @@ export default function TraceDetail() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-medium">Vết chạy — hồ sơ {caseId}</h2>
+      <h2 className="text-base font-medium">{tv("Vết chạy — hồ sơ {id}", { id: caseId })}</h2>
       <div className="text-sm text-muted-foreground">
-        Trace ID: <code>{blob.trace.id}</code> · Tổng token:{" "}
+        Trace ID: <code>{blob.trace.id}</code> · {tv("Tổng token")}:{" "}
         {blob.trace.total_tokens ?? "—"} · Cost (USD): {blob.trace.total_cost ?? "—"}
       </div>
       <TraceGantt items={items} />

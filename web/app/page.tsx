@@ -48,14 +48,16 @@ import {
   TableRow,
 } from "./components/ui/table";
 import { cn } from "./lib/utils";
+import { useI18n, type Lang } from "./lib/i18n";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatVnd(amount: number | null | undefined): string {
+function formatVnd(amount: number | null | undefined, lang: Lang = "vi"): string {
   if (amount == null) return "—";
+  const loc = lang === "en" ? "en-US" : "vi-VN";
   if (amount >= 1_000_000_000)
-    return `${(amount / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
-  return `${(amount / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })} tr`;
+    return `${(amount / 1_000_000_000).toLocaleString(loc, { maximumFractionDigits: 1 })} ${lang === "en" ? "bn" : "tỷ"}`;
+  return `${(amount / 1_000_000).toLocaleString(loc, { maximumFractionDigits: 0 })} ${lang === "en" ? "M" : "tr"}`;
 }
 
 function timeStr(iso: string) {
@@ -188,6 +190,7 @@ const DONUT_COLORS = [
 // ─── KPI Card 1: SLA Approval ────────────────────────────────────────────────
 
 function SLACard({ loading }: { loading: boolean }) {
+  const { tv } = useI18n();
   return (
     <Card className="py-0 gap-0 flex-1 min-w-[280px]">
       <CardContent className="flex gap-0 p-5">
@@ -196,13 +199,13 @@ function SLACard({ loading }: { loading: boolean }) {
           <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-navy-900)] mb-0.5">
             SLA Approval <Info className="size-3.5 text-muted-foreground shrink-0" />
           </div>
-          <p className="text-xs text-muted-foreground mb-3">Thời gian phê duyệt trung bình</p>
+          <p className="text-xs text-muted-foreground mb-3">{tv("Thời gian phê duyệt trung bình")}</p>
           {loading ? (
             <Skeleton className="h-8 w-28 mb-2" />
           ) : (
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-[28px] font-extrabold text-[var(--color-success-600)] font-[var(--font-display)] leading-none whitespace-nowrap">
-                1.6 ngày
+                {tv("1.6 ngày")}
               </span>
               <span className="text-sm font-bold text-[var(--color-success-600)] flex items-center gap-0.5 whitespace-nowrap">
                 <TrendingDown className="size-3.5" /> 42%
@@ -210,9 +213,9 @@ function SLACard({ loading }: { loading: boolean }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground mt-2 whitespace-nowrap">
-            So với thủ công: <span className="font-semibold text-foreground">2.8 ngày</span>
+            So với thủ công: <span className="font-semibold text-foreground">{tv("2.8 ngày")}</span>
           </p>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">* Ước tính — cần API created_at</p>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">{tv("* Ước tính — cần API created_at")}</p>
         </div>
         {/* Right: sparkline — hidden when card is narrow */}
         <div className="hidden sm:flex flex-col flex-none w-[144px]">
@@ -227,14 +230,14 @@ function SLACard({ loading }: { loading: boolean }) {
                   />
                   <Tooltip
                     contentStyle={{ fontSize: 11, padding: "3px 8px", borderRadius: 4, border: "none", background: "var(--color-gray-900)", color: "#fff" }}
-                    formatter={(v: number) => [`${v} ngày`, ""]}
+                    formatter={(v: number) => [tv("{n} ngày", { n: v }), ""]}
                     labelFormatter={(l: string) => l}
                   />
                 </LineChart>
               </ResponsiveContainer>
             )}
             <p className="text-[10px] text-muted-foreground leading-tight mt-1 text-right">
-              Cải thiện trong 30 ngày qua
+              {tv("Cải thiện trong 30 ngày qua")}
             </p>
           </div>
         </div>
@@ -246,6 +249,7 @@ function SLACard({ loading }: { loading: boolean }) {
 // ─── KPI Card 2: Portfolio Quality ───────────────────────────────────────────
 
 function PortfolioCard({ loading }: { loading: boolean }) {
+  const { tv } = useI18n();
   const gaugeData = [{ value: 100, fill: "var(--color-success-600)" }];
   return (
     <Card className="py-0 gap-0 flex-1 min-w-[280px]">
@@ -255,7 +259,7 @@ function PortfolioCard({ loading }: { loading: boolean }) {
           <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-navy-900)] mb-0.5">
             Portfolio Quality <Info className="size-3.5 text-muted-foreground shrink-0" />
           </div>
-          <p className="text-xs text-muted-foreground mb-3">Chất lượng danh mục tín dụng</p>
+          <p className="text-xs text-muted-foreground mb-3">{tv("Chất lượng danh mục tín dụng")}</p>
           {loading ? (
             <Skeleton className="h-8 w-20 mb-2" />
           ) : (
@@ -266,9 +270,9 @@ function PortfolioCard({ loading }: { loading: boolean }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground mt-2">
-            Chất lượng: <span className="font-bold text-[var(--color-success-600)]">Tốt</span>
+            Chất lượng: <span className="font-bold text-[var(--color-success-600)]">{tv("Tốt")}</span>
           </p>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">* Dữ liệu chỉ mang tính minh hoạ</p>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">{tv("* Dữ liệu chỉ mang tính minh hoạ")}</p>
         </div>
         {/* Right: gauge — hidden when card is narrow */}
         <div className="hidden sm:flex flex-col items-start justify-end flex-none self-end pb-1">
@@ -291,7 +295,7 @@ function PortfolioCard({ loading }: { loading: boolean }) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-base font-extrabold text-[var(--color-success-600)]">100%</span>
-                <span className="text-[10px] text-muted-foreground">Tốt</span>
+                <span className="text-[10px] text-muted-foreground">{tv("Tốt")}</span>
               </div>
             </div>
           )}
@@ -309,24 +313,25 @@ function QueueCard({
 }: {
   total: number; cao: number; trungBinh: number; thap: number; loading: boolean;
 }) {
+  const { tv } = useI18n();
   return (
     <Card className="py-0 gap-0 flex-1 min-w-[220px]">
       <CardContent className="p-5">
         <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-navy-900)] mb-0.5">
-          Hồ sơ chờ rà soát <Info className="size-3.5 text-muted-foreground shrink-0" />
+          {tv("Hồ sơ chờ rà soát")} <Info className="size-3.5 text-muted-foreground shrink-0" />
         </div>
-        <p className="text-xs text-muted-foreground mb-2">Liên quan hạn mức lớn hoặc chờ giải ngân lâu</p>
+        <p className="text-xs text-muted-foreground mb-2">{tv("Liên quan hạn mức lớn hoặc chờ giải ngân lâu")}</p>
         {loading ? (
           <Skeleton className="h-9 w-32 mb-3" />
         ) : (
           <p className="text-[32px] font-extrabold text-[var(--color-orange-600)] font-[var(--font-display)] leading-none mb-3">
-            {total} hồ sơ
+            {tv("{n} hồ sơ", { n: total })}
           </p>
         )}
         <div className="flex flex-col gap-1.5">
           <LegendRow color="var(--color-danger-600)"  label="Cao"        count={cao}       loading={loading} />
-          <LegendRow color="var(--color-warning-600)" label="Trung bình" count={trungBinh}  loading={loading} />
-          <LegendRow color="var(--color-success-600)" label="Thấp"       count={thap}       loading={loading} />
+          <LegendRow color="var(--color-warning-600)" label={tv("Trung bình")} count={trungBinh}  loading={loading} />
+          <LegendRow color="var(--color-success-600)" label={tv("Thấp")}       count={thap}       loading={loading} />
         </div>
       </CardContent>
     </Card>
@@ -336,11 +341,12 @@ function QueueCard({
 function LegendRow({ color, label, count, loading }: {
   color: string; label: string; count: number; loading: boolean;
 }) {
+  const { tv } = useI18n();
   return (
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2">
         <div className="size-2 rounded-full shrink-0" style={{ background: color }} />
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">{tv(label)}</span>
       </div>
       {loading ? <Skeleton className="h-4 w-5" /> : <span className="font-bold text-foreground">{count}</span>}
     </div>
@@ -360,13 +366,14 @@ function FilterBar({
   onMaxAmountChange: (val: number) => void;
   onReset: () => void;
 }) {
-  const displayMax = maxAmountB >= 100 ? "100 Tỷ+" : `${maxAmountB} Tỷ`;
+  const { tv } = useI18n();
+  const displayMax = maxAmountB >= 100 ? tv("100 Tỷ+") : tv("{n} Tỷ", { n: maxAmountB });
   return (
     <Card className="py-0 gap-0">
       <CardContent className="flex flex-wrap items-end gap-x-6 gap-y-3 px-5 py-3">
         {/* Sản phẩm */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Sản phẩm</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{tv("Sản phẩm")}</label>
           <div className="flex items-center gap-1.5 flex-wrap">
             {products.map((p) => (
               <button
@@ -386,7 +393,7 @@ function FilterBar({
               </button>
             ))}
             <button className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border border-dashed border-border text-muted-foreground hover:border-[var(--color-navy-500)] cursor-pointer transition-colors">
-              + Thêm
+              {tv("+ Thêm")}
             </button>
           </div>
         </div>
@@ -395,12 +402,12 @@ function FilterBar({
 
         {/* Đơn vị */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Đơn vị</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{tv("Đơn vị")}</label>
           <select className="text-sm font-medium border border-border rounded-md px-3 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--color-navy-500)] min-w-[180px]">
-            <option>Tất cả chi nhánh/PGD</option>
-            <option>CN Hà Nội</option>
-            <option>CN TP. Hồ Chí Minh</option>
-            <option>CN Đà Nẵng</option>
+            <option>{tv("Tất cả chi nhánh/PGD")}</option>
+            <option>{tv("CN Hà Nội")}</option>
+            <option>{tv("CN TP. Hồ Chí Minh")}</option>
+            <option>{tv("CN Đà Nẵng")}</option>
           </select>
         </div>
 
@@ -409,7 +416,7 @@ function FilterBar({
         {/* Hạn mức slider */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[180px] max-w-[260px]">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Hạn mức</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{tv("Hạn mức")}</label>
             <span className="text-xs text-muted-foreground tabular-nums">0 VND — {displayMax}</span>
           </div>
           <input
@@ -420,17 +427,17 @@ function FilterBar({
             style={{ accentColor: "var(--color-navy-700)" }}
           />
           <div className="flex justify-between text-[10px] text-muted-foreground">
-            <span>0</span><span>100 Tỷ+</span>
+            <span>0</span><span>{tv("100 Tỷ+")}</span>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-end gap-2 ml-auto">
           <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <SlidersHorizontal className="size-3.5" /> Bộ lọc khác
+            <SlidersHorizontal className="size-3.5" /> {tv("Bộ lọc khác")}
           </Button>
           <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={onReset}>
-            <RefreshCw className="size-3.5" /> Làm mới
+            <RefreshCw className="size-3.5" /> {tv("Làm mới")}
           </Button>
         </div>
       </CardContent>
@@ -474,6 +481,7 @@ function CaseTable({ cases, loading }: {
   cases: EnrichedCase[];
   loading: boolean;
 }) {
+  const { tv, lang } = useI18n();
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -501,13 +509,13 @@ function CaseTable({ cases, loading }: {
     <Card className="py-0 gap-0 overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pt-4 pb-3 px-5 gap-2">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-sm">Hồ sơ chờ xử lý</CardTitle>
+          <CardTitle className="text-sm">{tv("Hồ sơ chờ xử lý")}</CardTitle>
           {!loading && (
             <Badge variant="muted" className="rounded-full font-bold tabular-nums">{cases.length}</Badge>
           )}
         </div>
         <Button variant="ghost" size="sm" className="text-xs text-primary gap-0.5 -mr-2">
-          Xem tất cả <ChevronRight className="size-3" />
+          {tv("Xem tất cả")} <ChevronRight className="size-3" />
         </Button>
       </CardHeader>
       <Separator />
@@ -519,19 +527,19 @@ function CaseTable({ cases, loading }: {
         </div>
       ) : cases.length === 0 ? (
         <p className="p-8 text-sm text-muted-foreground text-center">
-          Không có hồ sơ nào phù hợp với bộ lọc.
+          {tv("Không có hồ sơ nào phù hợp với bộ lọc.")}
         </p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Mã hồ sơ</TableHead>
-              <TableHead>Khách hàng</TableHead>
-              <TableHead>Sản phẩm</TableHead>
-              <SortHead col="amount"   label="Hạn mức"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-              <SortHead col="priority" label="Độ ưu tiên"  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <TableHead>{tv("Mã hồ sơ")}</TableHead>
+              <TableHead>{tv("Khách hàng")}</TableHead>
+              <TableHead>{tv("Sản phẩm")}</TableHead>
+              <SortHead col="amount"   label={tv("Hạn mức")}     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <SortHead col="priority" label={tv("Độ ưu tiên")}  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
               <SortHead col="sla"      label="SLA"         sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-              <TableHead>Trạng thái</TableHead>
+              <TableHead>{tv("Trạng thái")}</TableHead>
               <TableHead className="w-[130px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -543,13 +551,13 @@ function CaseTable({ cases, loading }: {
               let statusLabel: string;
               let statusVariant: "warning" | "navy" | "success" | "muted";
               if (c.recommendation === "ANALYZING") {
-                statusLabel = "Đang rà soát"; statusVariant = "navy";
+                statusLabel = tv("Đang rà soát"); statusVariant = "navy";
               } else if (c.recommendation === "APPROVE") {
-                statusLabel = "Chờ phê duyệt"; statusVariant = "success";
+                statusLabel = tv("Chờ phê duyệt"); statusVariant = "success";
               } else if (c.recommendation === "REQUEST_DOCS") {
-                statusLabel = "Chờ rà soát"; statusVariant = "warning";
+                statusLabel = tv("Chờ rà soát"); statusVariant = "warning";
               } else {
-                statusLabel = "AI chấm điểm"; statusVariant = "muted";
+                statusLabel = tv("AI chấm điểm"); statusVariant = "muted";
               }
 
               return (
@@ -569,10 +577,10 @@ function CaseTable({ cases, loading }: {
                     <Badge variant="muted" className="font-mono text-[11px] rounded-sm">{c.raw.product}</Badge>
                   </TableCell>
                   <TableCell className="tabular-nums font-semibold text-foreground whitespace-nowrap">
-                    {formatVnd(c.amountVnd)}
+                    {formatVnd(c.amountVnd, lang)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={pm.variant} className="rounded-sm">{pm.label}</Badge>
+                    <Badge variant={pm.variant} className="rounded-sm">{tv(pm.label)}</Badge>
                   </TableCell>
                   <TableCell className={cn(
                     "font-semibold text-sm tabular-nums whitespace-nowrap",
@@ -580,7 +588,7 @@ function CaseTable({ cases, loading }: {
                       ? "text-[var(--color-danger-600)]"
                       : "text-muted-foreground"
                   )}>
-                    {sla < 0 ? `${sla} ngày` : `+${sla} ngày`}
+                    {tv("{n} ngày", { n: sla < 0 ? String(sla) : `+${sla}` })}
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant} className="rounded-full text-xs whitespace-nowrap">
@@ -589,7 +597,7 @@ function CaseTable({ cases, loading }: {
                   </TableCell>
                   <TableCell>
                     <Button asChild variant="outline" size="sm" className="text-xs h-7 px-3 whitespace-nowrap">
-                      <Link href={`/cases/${c.raw.case_id}`}>Mở hồ sơ</Link>
+                      <Link href={`/cases/${c.raw.case_id}`}>{tv("Mở hồ sơ")}</Link>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -616,10 +624,11 @@ const FUNNEL_DELTAS = ["+12%", "+5%", "+8%", "−7%", "+18%"];
 const FUNNEL_POSITIVE = [true, true, true, false, true];
 
 function ProcessingFunnel({ counts }: { counts: number[] }) {
+  const { tv } = useI18n();
   return (
     <Card className="py-0 gap-0">
       <CardHeader className="pb-0 pt-4 px-5">
-        <CardTitle className="text-sm">Phễu xử lý hồ sơ</CardTitle>
+        <CardTitle className="text-sm">{tv("Phễu xử lý hồ sơ")}</CardTitle>
       </CardHeader>
       <CardContent className="px-4 pt-3 pb-4">
         <div className="flex items-stretch">
@@ -647,7 +656,7 @@ function ProcessingFunnel({ counts }: { counts: number[] }) {
                   minWidth: 0,
                 }}
               >
-                <p className="text-[10px] font-semibold opacity-80 mb-0.5 leading-tight">{stage.label}</p>
+                <p className="text-[10px] font-semibold opacity-80 mb-0.5 leading-tight">{tv(stage.label)}</p>
                 <p className="text-xl font-extrabold leading-none">{counts[i]}</p>
                 <p className={cn(
                   "text-[10px] font-bold mt-0.5",
@@ -659,7 +668,7 @@ function ProcessingFunnel({ counts }: { counts: number[] }) {
             );
           })}
         </div>
-        <p className="text-[10px] text-muted-foreground mt-2">* So với 7 ngày trước</p>
+        <p className="text-[10px] text-muted-foreground mt-2">{tv("* So với 7 ngày trước")}</p>
       </CardContent>
     </Card>
   );
@@ -668,6 +677,7 @@ function ProcessingFunnel({ counts }: { counts: number[] }) {
 // ─── Product distribution donut ───────────────────────────────────────────────
 
 function ProductDonutChart({ distribution }: { distribution: { name: string; value: number }[] }) {
+  const { tv } = useI18n();
   const total = distribution.reduce((s, d) => s + d.value, 0);
 
   if (distribution.length === 0) return null;
@@ -675,11 +685,11 @@ function ProductDonutChart({ distribution }: { distribution: { name: string; val
   return (
     <Card className="py-0 gap-0">
       <CardHeader className="flex flex-row items-center justify-between pt-4 pb-0 px-5">
-        <CardTitle className="text-sm">Phân bổ hồ sơ theo sản phẩm</CardTitle>
+        <CardTitle className="text-sm">{tv("Phân bổ hồ sơ theo sản phẩm")}</CardTitle>
         <select className="text-xs border border-border rounded px-2 py-1 bg-card text-muted-foreground focus:outline-none">
-          <option>7 ngày qua</option>
-          <option>30 ngày qua</option>
-          <option>Tất cả</option>
+          <option>{tv("7 ngày qua")}</option>
+          <option>{tv("30 ngày qua")}</option>
+          <option>{tv("Tất cả")}</option>
         </select>
       </CardHeader>
       <CardContent className="px-5 pb-4 pt-3">
@@ -700,7 +710,7 @@ function ProductDonutChart({ distribution }: { distribution: { name: string; val
                 </Pie>
                 <Tooltip
                   contentStyle={{ fontSize: 11, borderRadius: 6, border: "none", background: "var(--color-gray-900)", color: "#fff" }}
-                  formatter={(v: number, n: string) => [`${v} hồ sơ`, n]}
+                  formatter={(v: number, n: string) => [tv("{n} hồ sơ", { n: v }), n]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -725,8 +735,8 @@ function ProductDonutChart({ distribution }: { distribution: { name: string; val
             ))}
             <Separator className="my-0.5" />
             <div className="flex items-center justify-between text-sm font-bold">
-              <span className="text-muted-foreground">Tổng</span>
-              <span className="text-foreground tabular-nums">{total} hồ sơ</span>
+              <span className="text-muted-foreground">{tv("Tổng")}</span>
+              <span className="text-foreground tabular-nums">{tv("{n} hồ sơ", { n: total })}</span>
             </div>
           </div>
         </div>
@@ -738,15 +748,16 @@ function ProductDonutChart({ distribution }: { distribution: { name: string; val
 // ─── High priority list ───────────────────────────────────────────────────────
 
 function HighPriorityList({ cases }: { cases: EnrichedCase[] }) {
+  const { tv, lang } = useI18n();
   if (cases.length === 0) return null;
   const top3 = cases.slice(0, 3);
 
   return (
     <Card className="py-0 gap-0">
       <CardHeader className="flex flex-row items-center justify-between pt-4 pb-0 px-5">
-        <CardTitle className="text-sm">Hồ sơ ưu tiên cao</CardTitle>
+        <CardTitle className="text-sm">{tv("Hồ sơ ưu tiên cao")}</CardTitle>
         <Button variant="ghost" size="sm" className="text-xs text-primary gap-0.5 -mr-2">
-          Xem tất cả <ChevronRight className="size-3" />
+          {tv("Xem tất cả")} <ChevronRight className="size-3" />
         </Button>
       </CardHeader>
       <CardContent className="px-5 pb-4 pt-3 flex flex-col gap-3">
@@ -760,10 +771,10 @@ function HighPriorityList({ cases }: { cases: EnrichedCase[] }) {
               <p className="text-sm font-bold text-primary truncate">{c.raw.case_id}</p>
               <p className="text-xs text-muted-foreground truncate mt-0.5">{c.raw.customer_id}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Hạn mức: <span className="font-semibold text-foreground">{formatVnd(c.amountVnd)}</span>
+                {tv("Hạn mức")}: <span className="font-semibold text-foreground">{formatVnd(c.amountVnd, lang)}</span>
               </p>
               <p className="text-xs font-semibold text-[var(--color-danger-600)] mt-0.5">
-                Quá hạn SLA: −{i + 1} ngày
+                {tv("Quá hạn SLA: −{n} ngày", { n: i + 1 })}
               </p>
             </div>
             <Badge variant="danger" className="rounded-sm shrink-0 mt-0.5">Cao</Badge>
@@ -790,6 +801,7 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 function ReasoningPanel({ c }: { c: EnrichedCase }) {
+  const { tv, lang } = useI18n();
   const reco = RECO_META[c.recommendation];
   const agents = [
     { name: "Financial Analysis", done: c.raw.has_findings },
@@ -823,31 +835,31 @@ function ReasoningPanel({ c }: { c: EnrichedCase }) {
       </div>
       <div className="flex flex-wrap items-start gap-8 px-5 py-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Đề xuất AI</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">{tv("Đề xuất AI")}</p>
           <Badge variant={RECO_VARIANT_MAP[reco.variant]} className="text-xs gap-1.5 px-3 py-1 rounded-md">
-            {reco.icon}{reco.label}
+            {reco.icon}{tv(reco.label)}
           </Badge>
         </div>
         <Separator orientation="vertical" className="self-stretch hidden sm:block" />
         <div className="flex-1 min-w-[160px]">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Yếu tố chính</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">{tv("Yếu tố chính")}</p>
           <ul className="text-sm text-foreground space-y-1 list-disc pl-4">
-            {factors.map((f) => <li key={f}>{f}</li>)}
+            {factors.map((f) => <li key={f}>{tv(f)}</li>)}
           </ul>
         </div>
         <Separator orientation="vertical" className="self-stretch hidden sm:block" />
         <div className="flex flex-col gap-3 min-w-[120px]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Số tiền</p>
-            <p className="text-sm font-semibold text-foreground tabular-nums">{formatVnd(c.amountVnd)}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{tv("Số tiền")}</p>
+            <p className="text-sm font-semibold text-foreground tabular-nums">{formatVnd(c.amountVnd, lang)}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Sản phẩm</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{tv("Sản phẩm")}</p>
             <p className="text-sm font-semibold text-foreground font-mono">{c.raw.product}</p>
           </div>
           {c.aiConfidence !== null && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Độ tin cậy</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{tv("Độ tin cậy")}</p>
               <ConfidenceBar value={c.aiConfidence} />
             </div>
           )}
@@ -855,10 +867,10 @@ function ReasoningPanel({ c }: { c: EnrichedCase }) {
         <div className="flex flex-col gap-2 self-center ml-auto">
           <Button asChild size="sm">
             <Link href={`/cases/${c.raw.case_id}`}>
-              {c.raw.has_findings ? "Mở hồ sơ" : "Bắt đầu"}
+              {c.raw.has_findings ? tv("Mở hồ sơ") : tv("Bắt đầu")}
             </Link>
           </Button>
-          <Button variant="outline" size="sm">Xem chi tiết</Button>
+          <Button variant="outline" size="sm">{tv("Xem chi tiết")}</Button>
         </div>
       </div>
     </Card>
@@ -868,13 +880,14 @@ function ReasoningPanel({ c }: { c: EnrichedCase }) {
 // ─── Status bar ───────────────────────────────────────────────────────────────
 
 function StatusBar({ lastUpdated }: { lastUpdated: string | null }) {
+  const { tv, lang } = useI18n();
   return (
     <div className="flex items-center justify-between px-1 py-2 text-xs text-muted-foreground">
       <div className="flex items-center gap-2">
         <span>
-          Dữ liệu cập nhật:{" "}
+          {tv("Dữ liệu cập nhật")}:{" "}
           {lastUpdated
-            ? new Date(lastUpdated).toLocaleString("vi-VN", {
+            ? new Date(lastUpdated).toLocaleString(lang === "en" ? "en-GB" : "vi-VN", {
                 day: "2-digit", month: "2-digit", year: "numeric",
                 hour: "2-digit", minute: "2-digit",
               })
@@ -885,7 +898,7 @@ function StatusBar({ lastUpdated }: { lastUpdated: string | null }) {
       </div>
       <div className="flex items-center gap-1">
         <Info className="size-3" />
-        <span>Tất cả thời gian hiển thị theo GMT+7</span>
+        <span>{tv("Tất cả thời gian hiển thị theo GMT+7")}</span>
       </div>
     </div>
   );
@@ -894,6 +907,7 @@ function StatusBar({ lastUpdated }: { lastUpdated: string | null }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApplicationQueue() {
+  const { tv } = useI18n();
   const [cases, setCases] = useState<CaseSummary[] | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [maxAmountB, setMaxAmountB] = useState(100); // in tỷ VND, 100 = no filter
@@ -977,12 +991,12 @@ export default function ApplicationQueue() {
       {/* ── Top header ────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-card border-b border-border">
         <div className="flex items-center gap-4 px-6 py-3">
-          <div className="text-sm font-bold text-foreground shrink-0">Danh sách hồ sơ</div>
+          <div className="text-sm font-bold text-foreground shrink-0">{tv("Danh sách hồ sơ")}</div>
           <div className="flex-1 max-w-lg mx-auto relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm hồ sơ, khách hàng, mã hồ sơ…"
+              placeholder={tv("Tìm kiếm hồ sơ, khách hàng, mã hồ sơ…")}
               className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-muted/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[var(--color-navy-500)]"
             />
           </div>
@@ -991,7 +1005,7 @@ export default function ApplicationQueue() {
             <div className="flex items-center gap-2 text-sm">
               <div className="size-8 rounded-full bg-[var(--color-navy-700)] flex items-center justify-center text-white text-xs font-bold shrink-0">NA</div>
               <div className="hidden sm:block">
-                <p className="font-semibold text-foreground text-xs leading-tight">Nguyễn Văn An</p>
+                <p className="font-semibold text-foreground text-xs leading-tight">{tv("Nguyễn Văn An")}</p>
                 <p className="text-[11px] text-muted-foreground">CBTD</p>
               </div>
               <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />

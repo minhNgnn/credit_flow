@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Minimal EN/VI language switcher for the "main screens" (queue, case
- * detail, its 3 tabs, sidebar, chips, formatters). Deliberately NOT wired
- * into EvidenceViewer.tsx / ExplainabilityDrawer.tsx — out of scope for
- * this pass (see docs/architecture plan discussion), those two stay
- * Vietnamese-only for now.
+ * EN/VI language switcher. Two lookup styles share one context:
+ *   t("queue.title")      — key-based (lib/i18n.tsx + lib/messages/*.ts)
+ *   tv("Mã hồ sơ")        — Vietnamese-literal-keyed, translated through
+ *                           lib/messages/vi-en.ts (screens written VI-first)
+ * Both fall back to Vietnamese, never throw and never render blank.
  *
  * Usage: const { t, lang, setLang } = useI18n();  t("queue.title")
  * Falls back to the Vietnamese string (or the raw key) if a key is
@@ -14,6 +14,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type Lang = "vi" | "en";
+
+import { extraVi, extraEn } from "./messages";
+import { viToEn } from "./messages/vi-en";
 
 const STORAGE_KEY = "shbexpert.lang";
 
@@ -472,6 +475,9 @@ const messages: Record<Lang, Record<string, string>> = {
   },
 };
 
+Object.assign(messages.vi, extraVi);
+Object.assign(messages.en, extraEn);
+
 function interpolate(template: string, vars?: Record<string, string | number>): string {
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
@@ -481,6 +487,10 @@ interface I18nContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  /** Literal-keyed variant for screens written Vietnamese-first: pass the
+   * Vietnamese text itself; in EN it is looked up in `viToEn`
+   * (lib/messages/vi-en.ts) and falls back to the Vietnamese text. */
+  tv: (vi: string, vars?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -510,7 +520,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const tv = useCallback(
+    (vi: string, vars?: Record<string, string | number>) =>
+      interpolate(lang === "en" ? (viToEn[vi] ?? vi) : vi, vars),
+    [lang]
+  );
+
+  const value = useMemo(() => ({ lang, setLang, t, tv }), [lang, setLang, t, tv]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { StepEvent } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 interface Props {
   caseIds: string[];
@@ -17,6 +18,7 @@ interface FeedItem {
 }
 
 export default function EventStream({ caseIds }: Props) {
+  const { tv, lang } = useI18n();
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const sourcesRef = useRef<EventSource[]>([]);
 
@@ -43,15 +45,15 @@ export default function EventStream({ caseIds }: Props) {
 
   return (
     <div>
-      <h4 className="mb-2 text-xs font-medium text-muted-foreground">Hoạt động trực tiếp (top 50)</h4>
+      <h4 className="mb-2 text-xs font-medium text-muted-foreground">{tv("Hoạt động trực tiếp (top 50)")}</h4>
       <ul className="space-y-1 font-mono text-xs">
-        {feed.length === 0 ? <li className="text-muted-foreground">Chưa có sự kiện nào.</li> : null}
+        {feed.length === 0 ? <li className="text-muted-foreground">{tv("Chưa có sự kiện nào.")}</li> : null}
         {feed.map((item, i) => {
           const tone = item.type.includes("failed") ? "text-red-600" : item.type.includes("started") ? "text-blue-600" : "text-emerald-600";
-          const verb = item.type.includes("started") ? "bắt đầu" : item.type.includes("failed") ? "lỗi" : "xong";
+          const verb = item.type.includes("started") ? tv("bắt đầu") : item.type.includes("failed") ? tv("lỗi") : tv("xong");
           return (
             <li key={`${item.ts}-${i}`} className="flex items-center gap-3">
-              <span className="text-muted-foreground tabular-nums">{new Date(item.ts).toLocaleTimeString("vi-VN")}</span>
+              <span className="text-muted-foreground tabular-nums">{new Date(item.ts).toLocaleTimeString(lang === "en" ? "en-GB" : "vi-VN")}</span>
               <span className="font-mono">{item.case_id}</span>
               <span className={tone}>{verb}</span>
               <span className="text-muted-foreground">{item.label ?? item.step ?? item.type}</span>

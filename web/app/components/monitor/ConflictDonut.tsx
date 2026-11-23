@@ -3,6 +3,7 @@
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { ConflictDistEntry, ConflictRoundEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 const STATUS_COLORS: Record<string, string> = {
   RESOLVED: "#00853E",
@@ -17,6 +18,7 @@ export default function ConflictDonut({
   conflict_distribution: ConflictDistEntry[];
   conflict_round_distribution: ConflictRoundEntry[];
 }) {
+  const { tv } = useI18n();
   const donutData = conflict_distribution.map((c) => ({ name: c.status, value: c.n }));
   const total = donutData.reduce((s, d) => s + d.value, 0);
   return (
@@ -35,7 +37,7 @@ export default function ConflictDonut({
           </ResponsiveContainer>
         </div>
         {total === 0 ? (
-          <div className="text-center text-xs text-muted-foreground">Chưa có mâu thuẫn.</div>
+          <div className="text-center text-xs text-muted-foreground">{tv("Chưa có mâu thuẫn.")}</div>
         ) : (
           <ul className="text-xs">
             {donutData.map((d) => (
@@ -48,7 +50,7 @@ export default function ConflictDonut({
         )}
       </div>
       <div>
-        <h4 className="text-xs font-medium text-muted-foreground mb-1">Số vòng theo issue_key</h4>
+        <h4 className="text-xs font-medium text-muted-foreground mb-1">{tv("Số vòng theo issue_key")}</h4>
         {conflict_round_distribution.length === 0 ? (
           <div className="text-xs text-muted-foreground">—</div>
         ) : (

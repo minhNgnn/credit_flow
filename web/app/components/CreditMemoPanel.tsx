@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { fetchCreditMemo } from "../lib/api";
 import type { CreditMemo } from "../lib/types";
+import { useI18n } from "../lib/i18n";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ function InfoGrid({ rows }: { rows: [string, string][] }) {
 }
 
 function StanceChip({ stance }: { stance: string }) {
+  const { tv } = useI18n();
   const map: Record<string, { label: string; cls: string }> = {
     SUPPORT:  { label: "Hỗ trợ",    cls: "bg-[var(--color-success-50,#f0faf5)] text-[var(--color-success-600)] border-[var(--color-success-200,#a3d9bc)]" },
     OPPOSE:   { label: "Rủi ro",    cls: "bg-[#fff1f0] text-[var(--color-danger-600)] border-[#ffc9c9]" },
@@ -110,7 +112,7 @@ function StanceChip({ stance }: { stance: string }) {
   const m = map[stance] ?? { label: stance, cls: "bg-muted text-muted-foreground border-border" };
   return (
     <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border ${m.cls}`}>
-      {m.label}
+      {tv(m.label)}
     </span>
   );
 }
@@ -126,6 +128,7 @@ export function CreditMemoPanel({
   canGenerate: boolean;
   onMemoReady?: (ready: boolean) => void;
 }) {
+  const { tv } = useI18n();
   const [memo, setMemo]     = useState<CreditMemo | null>(null);
   const [error, setError]   = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -174,19 +177,19 @@ export function CreditMemoPanel({
         {/* Header */}
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
           <FileCheck2 className="size-4 text-[var(--color-navy-700)]" />
-          <h3 className="text-sm font-bold text-foreground">Tờ trình thẩm định tín dụng</h3>
+          <h3 className="text-sm font-bold text-foreground">{tv("Tờ trình thẩm định tín dụng")}</h3>
         </div>
 
         <div className="flex flex-col items-center gap-4 py-10 px-6 text-center">
           <ClipboardList className="size-10 text-muted-foreground opacity-40" />
           <div>
             <p className="text-sm font-semibold text-foreground mb-1">
-              {canGenerate ? "Sẵn sàng tạo tờ trình" : "Chưa thể tạo tờ trình"}
+              {canGenerate ? tv("Sẵn sàng tạo tờ trình") : tv("Chưa thể tạo tờ trình")}
             </p>
             <p className="text-xs text-muted-foreground max-w-xs">
               {canGenerate
-                ? "AI sẽ tổng hợp kết quả phân tích thành tờ trình thẩm định chuẩn ngân hàng."
-                : "Hồ sơ cần hoàn tất phân tích AI trước khi tạo tờ trình."}
+                ? tv("AI sẽ tổng hợp kết quả phân tích thành tờ trình thẩm định chuẩn ngân hàng.")
+                : tv("Hồ sơ cần hoàn tất phân tích AI trước khi tạo tờ trình.")}
             </p>
           </div>
           {error && (
@@ -201,8 +204,8 @@ export function CreditMemoPanel({
             style={{ background: canGenerate ? "var(--color-orange-600)" : undefined }}
           >
             {loading
-              ? <><RefreshCw className="size-4 animate-spin" /> Đang tạo…</>
-              : <><FileCheck2 className="size-4" /> Tạo tờ trình</>}
+              ? <><RefreshCw className="size-4 animate-spin" /> {tv("Đang tạo…")}</>
+              : <><FileCheck2 className="size-4" /> {tv("Tạo tờ trình")}</>}
           </button>
         </div>
       </div>
@@ -231,14 +234,14 @@ export function CreditMemoPanel({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] text-[var(--color-navy-300)] uppercase tracking-widest mb-1">
-              Ngân hàng TMCP Sài Gòn – Hà Nội (SHB)
+              {tv("Ngân hàng TMCP Sài Gòn – Hà Nội (SHB)")}
             </p>
             <h2 className="text-base font-bold leading-tight mb-2">
-              TỜ TRÌNH THẨM ĐỊNH TÍN DỤNG
+              {tv("TỜ TRÌNH THẨM ĐỊNH TÍN DỤNG")}
             </h2>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--color-navy-300)]">
-              <span>Hồ sơ: <span className="text-white font-mono font-semibold">{memo.case_id}</span></span>
-              <span>Lập ngày: <span className="text-white">{fmtDate(memo.prepared_at)}</span></span>
+              <span>{tv("Hồ sơ:")} <span className="text-white font-mono font-semibold">{memo.case_id}</span></span>
+              <span>{tv("Lập ngày:")} <span className="text-white">{fmtDate(memo.prepared_at)}</span></span>
             </div>
           </div>
           {/* Action buttons */}
@@ -249,8 +252,8 @@ export function CreditMemoPanel({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-orange-600)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {downloading
-                ? <><RefreshCw className="size-3.5 animate-spin" /> Đang xuất…</>
-                : <><FileDown className="size-3.5" /> Xuất PDF</>}
+                ? <><RefreshCw className="size-3.5 animate-spin" /> {tv("Đang xuất…")}</>
+                : <><FileDown className="size-3.5" /> {tv("Xuất PDF")}</>}
             </button>
             <button
               onClick={generate}
@@ -258,8 +261,8 @@ export function CreditMemoPanel({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 text-white hover:bg-white/20 transition-colors disabled:opacity-50"
             >
               {loading
-                ? <><RefreshCw className="size-3.5 animate-spin" /> Đang tạo…</>
-                : <><RefreshCw className="size-3.5" /> Làm mới</>}
+                ? <><RefreshCw className="size-3.5 animate-spin" /> {tv("Đang tạo…")}</>
+                : <><RefreshCw className="size-3.5" /> {tv("Làm mới")}</>}
             </button>
           </div>
         </div>
@@ -272,8 +275,8 @@ export function CreditMemoPanel({
       >
         <span style={{ color: recMeta.color }}>{recMeta.icon}</span>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Khuyến nghị AI</p>
-          <p className="text-sm font-extrabold" style={{ color: recMeta.color }}>{recMeta.label}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{tv("Khuyến nghị AI")}</p>
+          <p className="text-sm font-extrabold" style={{ color: recMeta.color }}>{tv(recMeta.label)}</p>
         </div>
       </div>
 
@@ -282,7 +285,7 @@ export function CreditMemoPanel({
 
         {/* I. Thông tin khoản vay */}
         {infoSection && (
-          <SectionBlock title="I. Thông tin khách hàng & khoản vay">
+          <SectionBlock title={tv("I. Thông tin khách hàng & khoản vay")}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {infoSection.content.map((line) => {
                 const [label, ...rest] = line.split(": ");
@@ -327,7 +330,7 @@ export function CreditMemoPanel({
 
         {/* Conditions precedent */}
         {conditionSection && conditionSection.content.length > 0 && (
-          <SectionBlock title="IX. Điều kiện tiên quyết giải ngân">
+          <SectionBlock title={tv("IX. Điều kiện tiên quyết giải ngân")}>
             <ol className="flex flex-col gap-2 list-decimal list-inside">
               {conditionSection.content.map((cond, i) => (
                 <li key={i} className="text-xs text-foreground leading-snug">{cond}</li>
@@ -338,7 +341,7 @@ export function CreditMemoPanel({
 
         {/* Conclusion */}
         {conclusionSection && (
-          <SectionBlock title="X. Kết luận & kiến nghị">
+          <SectionBlock title={tv("X. Kết luận & kiến nghị")}>
             <div className="flex flex-col gap-2">
               {conclusionSection.content.map((line, i) => {
                 const [label, ...rest] = line.split(": ");
@@ -356,7 +359,7 @@ export function CreditMemoPanel({
         {/* Signature block */}
         <div className="border border-border rounded-lg overflow-hidden">
           <div className="bg-[var(--color-navy-800)] text-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider">
-            Chữ ký xác nhận
+            {tv("Chữ ký xác nhận")}
           </div>
           <div className="grid grid-cols-3 divide-x divide-border">
             {[
@@ -365,9 +368,9 @@ export function CreditMemoPanel({
               { role: "Giám đốc phê duyệt", name: "" },
             ].map(({ role, name }) => (
               <div key={role} className="p-4 text-center">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-6">{role}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-6">{tv(role)}</p>
                 <div className="h-px bg-border mb-2" />
-                <p className="text-xs text-muted-foreground italic">{name || "(Ký, ghi rõ họ tên)"}</p>
+                <p className="text-xs text-muted-foreground italic">{name || tv("(Ký, ghi rõ họ tên)")}</p>
               </div>
             ))}
           </div>

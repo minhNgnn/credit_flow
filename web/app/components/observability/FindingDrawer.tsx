@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaseDetail, Finding } from "../../lib/types";
+import { useI18n } from "../../lib/i18n";
 
 interface Props {
   findings: Finding[];
@@ -9,11 +10,12 @@ interface Props {
 }
 
 export default function FindingDrawer({ findings, selectedKey, onSelect }: Props) {
+  const { tv } = useI18n();
   const selected = findings.find((f) => f.finding_key === selectedKey) ?? null;
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <h3 className="mb-2 text-sm font-medium">Nhận định ({findings.length})</h3>
+        <h3 className="mb-2 text-sm font-medium">{tv("Nhận định")} ({findings.length})</h3>
         <ul className="space-y-1">
           {findings.map((f) => (
             <li
@@ -38,27 +40,27 @@ export default function FindingDrawer({ findings, selectedKey, onSelect }: Props
             <div className="font-mono">{selected.display_id}</div>
             <p>{selected.claim}</p>
             <dl className="grid grid-cols-2 gap-1">
-              <dt className="text-muted-foreground">Thái độ</dt>
+              <dt className="text-muted-foreground">{tv("Thái độ")}</dt>
               <dd>{selected.stance}</dd>
-              <dt className="text-muted-foreground">Mức độ</dt>
+              <dt className="text-muted-foreground">{tv("Mức độ")}</dt>
               <dd>{selected.severity}</dd>
-              <dt className="text-muted-foreground">Độ tin cậy</dt>
+              <dt className="text-muted-foreground">{tv("Độ tin cậy")}</dt>
               <dd>{(selected.confidence * 100).toFixed(0)}%</dd>
-              <dt className="text-muted-foreground">Phiên bản</dt>
+              <dt className="text-muted-foreground">{tv("Phiên bản")}</dt>
               <dd>v{selected.version}</dd>
             </dl>
             {selected.change_reason && (
-              <p className="italic text-muted-foreground">Lý do thay đổi: {selected.change_reason}</p>
+              <p className="italic text-muted-foreground">{tv("Lý do thay đổi")}: {selected.change_reason}</p>
             )}
             {selected.evidence_ids.length > 0 && (
               <div className="text-xs">
-                <span className="text-muted-foreground">Bằng chứng: </span>
+                <span className="text-muted-foreground">{tv("Bằng chứng:")} </span>
                 {selected.evidence_ids.join(", ")}
               </div>
             )}
             {selected.citations.length > 0 && (
               <div className="text-xs">
-                <span className="text-muted-foreground">Trích dẫn: </span>
+                <span className="text-muted-foreground">{tv("Trích dẫn:")} </span>
                 <ul className="list-disc pl-5">
                   {selected.citations.map((c, i) => (
                     <li key={i}>
@@ -73,7 +75,7 @@ export default function FindingDrawer({ findings, selectedKey, onSelect }: Props
           </div>
         ) : (
           <div className="rounded border border-border p-3 text-sm text-muted-foreground">
-            Chọn một nhận định để xem chi tiết.
+            {tv("Chọn một nhận định để xem chi tiết.")}
           </div>
         )}
       </div>

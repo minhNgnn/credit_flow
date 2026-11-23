@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useI18n } from "../../lib/i18n";
 
 interface GanttItem {
   name: string;
@@ -10,8 +11,9 @@ interface GanttItem {
 }
 
 export default function TraceGantt({ items }: { items: GanttItem[] }) {
+  const { tv } = useI18n();
   if (!items.length) {
-    return <div className="text-sm text-muted-foreground">Không có vết chạy nào cho hồ sơ này.</div>;
+    return <div className="text-sm text-muted-foreground">{tv("Không có vết chạy nào cho hồ sơ này.")}</div>;
   }
   const minStart = Math.min(...items.map((i) => i.start));
   const data = items.map((i) => ({

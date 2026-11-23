@@ -1,6 +1,7 @@
 "use client";
 
 import type { MonitorKPI } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 interface KPIBadgeProps {
   label: string;
@@ -26,21 +27,22 @@ function KPIBadge({ label, value, tone = "default" }: KPIBadgeProps) {
 }
 
 export default function KPIStrip({ kpi }: { kpi: MonitorKPI }) {
+  const { tv } = useI18n();
   const ready = kpi.cases_by_state["READY_FOR_REVIEW"] ?? 0;
   const draft = kpi.cases_by_state["DRAFT"] ?? 0;
   const analyzing = kpi.cases_by_state["ANALYZING"] ?? 0;
   return (
     <div className="flex flex-wrap gap-2">
-      <KPIBadge label="Hồ sơ" value={kpi.total_cases} tone="info" />
-      <KPIBadge label="Sẵn duyệt" value={ready} tone="positive" />
-      <KPIBadge label="Bản nháp" value={draft} tone="warning" />
-      {analyzing > 0 && <KPIBadge label="Đang chạy" value={analyzing} tone="info" />}
-      <KPIBadge label="Nhận định" value={kpi.total_findings} />
-      <KPIBadge label="Mâu thuẫn" value={kpi.total_conflicts} tone={kpi.total_conflicts > 0 ? "critical" : "default"} />
-      <KPIBadge label="Quyết định" value={kpi.total_decisions} />
-      <KPIBadge label="Sự kiện" value={kpi.total_events} />
-      <KPIBadge label="Vết chạy" value={kpi.total_traces} tone="info" />
-      <KPIBadge label="Lần gọi LLM" value={kpi.total_llm_calls} tone="info" />
+      <KPIBadge label={tv("Hồ sơ")} value={kpi.total_cases} tone="info" />
+      <KPIBadge label={tv("Sẵn duyệt")} value={ready} tone="positive" />
+      <KPIBadge label={tv("Bản nháp")} value={draft} tone="warning" />
+      {analyzing > 0 && <KPIBadge label={tv("Đang chạy")} value={analyzing} tone="info" />}
+      <KPIBadge label={tv("Nhận định")} value={kpi.total_findings} />
+      <KPIBadge label={tv("Mâu thuẫn")} value={kpi.total_conflicts} tone={kpi.total_conflicts > 0 ? "critical" : "default"} />
+      <KPIBadge label={tv("Quyết định")} value={kpi.total_decisions} />
+      <KPIBadge label={tv("Sự kiện")} value={kpi.total_events} />
+      <KPIBadge label={tv("Vết chạy")} value={kpi.total_traces} tone="info" />
+      <KPIBadge label={tv("Lần gọi LLM")} value={kpi.total_llm_calls} tone="info" />
     </div>
   );
 }

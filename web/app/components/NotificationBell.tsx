@@ -18,6 +18,7 @@ import { Bell, X, FileWarning, Upload, ArrowUpCircle, CheckCircle2, XCircle } fr
 import Link from "next/link";
 import { fetchCases } from "../lib/api";
 import type { CaseSummary } from "../lib/types";
+import { useI18n } from "../lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -38,33 +39,35 @@ interface Notif {
 const STORAGE_KEY = "shb_notif_seen";
 const POLL_MS = 30_000;
 
+type TV = (vi: string, vars?: Record<string, string | number>) => string;
+
 const TYPE_META: Record<NotifType, {
   icon: (n: Notif) => React.ReactNode;
   label: string;
   color: (n: Notif) => string;
   bg: string;
-  detail: (n: Notif) => string;
+  detail: (n: Notif, tv: TV) => string;
 }> = {
   missing_docs: {
     icon: () => <FileWarning className="size-4" />,
     label: "Thiếu tài liệu",
     color: () => "var(--color-danger-600)",
     bg: "#fff1f0",
-    detail: (n) => `Hồ sơ ${n.caseId} (${n.customerId}) cần RM bổ sung tài liệu.`,
+    detail: (n, tv) => tv("Hồ sơ {id} ({cu}) cần RM bổ sung tài liệu.", { id: n.caseId, cu: n.customerId }),
   },
   docs_updated: {
     icon: () => <Upload className="size-4" />,
     label: "RM đã cập nhật tài liệu",
     color: () => "var(--color-success-600)",
     bg: "#f0faf5",
-    detail: (n) => `RM đã tải lên tài liệu cho hồ sơ ${n.caseId} (${n.customerId}).`,
+    detail: (n, tv) => tv("RM đã tải lên tài liệu cho hồ sơ {id} ({cu}).", { id: n.caseId, cu: n.customerId }),
   },
   sent_to_authority: {
     icon: () => <ArrowUpCircle className="size-4" />,
     label: "Gửi lên cấp cao hơn",
     color: () => "var(--color-navy-700)",
     bg: "#f0f0f8",
-    detail: (n) => `Hồ sơ ${n.caseId} (${n.customerId}) đã gửi lên Ban lãnh đạo phê duyệt.`,
+    detail: (n, tv) => tv("Hồ sơ {id} ({cu}) đã gửi lên Ban lãnh đạo phê duyệt.", { id: n.caseId, cu: n.customerId }),
   },
   received_decision: {
     icon: (n) => n.state === "APPROVED"
@@ -73,10 +76,10 @@ const TYPE_META: Record<NotifType, {
     label: "Nhận kết quả phê duyệt",
     color: (n) => n.state === "APPROVED" ? "var(--color-success-600)" : "var(--color-danger-600)",
     bg: "#fffbf0",
-    detail: (n) =>
+    detail: (n, tv) =>
       n.state === "APPROVED"
-        ? `Hồ sơ ${n.caseId} (${n.customerId}) đã được PHÊ DUYỆT.`
-        : `Hồ sơ ${n.caseId} (${n.customerId}) đã bị TỪ CHỐI.`,
+        ? tv("Hồ sơ {id} ({cu}) đã được PHÊ DUYỆT.", { id: n.caseId, cu: n.customerId })
+        : tv("Hồ sơ {id} ({cu}) đã bị TỪ CHỐI.", { id: n.caseId, cu: n.customerId }),
   },
 };
 
@@ -193,17 +196,18 @@ function saveSeen(ids: Set<string>) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids])); } catch { /* ignore */ }
 }
 
-function relativeTime(ts: number): string {
+function relativeTime(ts: number, tv: TV): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 60) return "Vừa xong";
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-  return `${Math.floor(diff / 86400)} ngày trước`;
+  if (diff < 60) return tv("Vừa xong");
+  if (diff < 3600) return tv("{n} phút trước", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return tv("{n} giờ trước", { n: Math.floor(diff / 3600) });
+  return tv("{n} ngày trước", { n: Math.floor(diff / 86400) });
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NotificationBell() {
+  const { tv } = useI18n();
   const [notifs, setNotifs]   = useState<Notif[]>([]);
   const [seen, setSeen]       = useState<Set<string>>(new Set());
   const [open, setOpen]       = useState(false);
@@ -279,7 +283,7 @@ export function NotificationBell() {
       <button
         onClick={handleOpen}
         className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-        aria-label={`${unreadCount} thông báo chưa đọc`}
+        aria-label={tv("{n} thông báo chưa đọc", { n: unreadCount })}
       >
         <Bell className="size-5 text-muted-foreground" />
         {unreadCount > 0 && (
@@ -298,10 +302,10 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border sticky top-0 bg-card z-10">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-foreground">Thông báo</span>
+              <span className="text-sm font-bold text-foreground">{tv("Thông báo")}</span>
               {unreadCount > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-orange-600)] text-white">
-                  {unreadCount} mới
+                  {tv("{n} mới", { n: unreadCount })}
                 </span>
               )}
             </div>
@@ -311,7 +315,7 @@ export function NotificationBell() {
                   onClick={markAllRead}
                   className="text-[11px] text-[var(--color-orange-600)] hover:underline font-semibold"
                 >
-                  Đánh dấu đã đọc
+                  {tv("Đánh dấu đã đọc")}
                 </button>
               )}
               <button
@@ -327,7 +331,7 @@ export function NotificationBell() {
           {notifs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <Bell className="size-8 opacity-25" />
-              <p className="text-sm">Không có thông báo</p>
+              <p className="text-sm">{tv("Không có thông báo")}</p>
             </div>
           ) : (
             <div className="flex flex-col">
@@ -343,7 +347,7 @@ export function NotificationBell() {
                       style={{ background: meta.bg, color: meta.color(group[0]) }}
                     >
                       {meta.icon(group[0])}
-                      {meta.label}
+                      {tv(meta.label)}
                       <span className="ml-auto text-[10px] font-bold opacity-70">{group.length}</span>
                     </div>
 
@@ -380,10 +384,10 @@ export function NotificationBell() {
                               )}
                             </div>
                             <p className="text-[12px] text-muted-foreground leading-snug">
-                              {meta.detail(n)}
+                              {meta.detail(n, tv)}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-1 opacity-70">
-                              {relativeTime(n.ts)}
+                              {relativeTime(n.ts, tv)}
                             </p>
                           </div>
                         </Link>
@@ -402,7 +406,7 @@ export function NotificationBell() {
               onClick={() => setOpen(false)}
               className="text-xs text-[var(--color-orange-600)] font-semibold hover:underline"
             >
-              Xem tất cả hồ sơ →
+              {tv("Xem tất cả hồ sơ →")}
             </Link>
           </div>
         </div>

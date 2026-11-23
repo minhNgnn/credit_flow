@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchEvidence, fetchFindingHistory } from "../lib/api";
 import type { EvidenceItem, Finding } from "../lib/types";
 import { EvidenceViewer } from "./EvidenceViewer";
+import { useI18n } from "../lib/i18n";
 
 /**
  * Screen 2 + 3 from Explainable_AI_Interaction_Design.md: Agent
@@ -35,6 +36,7 @@ export function ExplainabilityDrawer({
   finding: Finding;
   onClose: () => void;
 }) {
+  const { tv } = useI18n();
   const [evidence, setEvidence] = useState<EvidenceItem[] | null>(null);
   const [history, setHistory] = useState<Finding[] | null>(null);
   const [viewerEvidence, setViewerEvidence] = useState<EvidenceItem | null>(null);
@@ -101,7 +103,7 @@ export function ExplainabilityDrawer({
                 {c.version && ` v${c.version}`}
                 {c.section && ` — ${c.section}`}
               </div>
-              {c.effective_date && <div className="muted" style={{ fontSize: 12 }}>hiệu lực {c.effective_date}</div>}
+              {c.effective_date && <div className="muted" style={{ fontSize: 12 }}>{tv("hiệu lực")} {c.effective_date}</div>}
               <blockquote
                 style={{
                   fontSize: 13,
@@ -123,8 +125,8 @@ export function ExplainabilityDrawer({
 
       <section style={{ marginBottom: 20 }}>
         <h3 className="section-title" style={{ fontSize: 14 }}>Evidence</h3>
-        {evidence === null && <p className="muted">Đang tải...</p>}
-        {evidence?.length === 0 && <p className="muted">Không có evidence.</p>}
+        {evidence === null && <p className="muted">{tv("Đang tải...")}</p>}
+        {evidence?.length === 0 && <p className="muted">{tv("Không có evidence.")}</p>}
         {evidence?.map((e) => (
           <div key={e.field_id} className="card" style={{ padding: 10, marginBottom: 8 }}>
             <div style={{ fontWeight: 600 }}>{e.field_key.replace(/_/g, " ")}</div>
@@ -144,7 +146,7 @@ export function ExplainabilityDrawer({
                   cursor: "pointer",
                 }}
               >
-                Mở tài liệu gốc →
+                {tv("Mở tài liệu gốc →")}
               </button>
             )}
           </div>
@@ -153,7 +155,7 @@ export function ExplainabilityDrawer({
 
       {history && history.length > 1 && (
         <section>
-          <h3 className="section-title" style={{ fontSize: 14 }}>Decision Trace — lịch sử version</h3>
+          <h3 className="section-title" style={{ fontSize: 14 }}>{tv("Decision Trace — lịch sử version")}</h3>
           {history.map((h) => (
             <div key={h.version} style={{ borderLeft: "3px solid var(--border)", paddingLeft: 10, marginBottom: 10 }}>
               <div style={{ fontWeight: 600 }}>

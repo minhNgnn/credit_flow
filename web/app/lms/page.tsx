@@ -52,6 +52,7 @@ import {
   type Segment,
   type SlinkApplication,
 } from "../lib/intakeApi";
+import { useI18n } from "../lib/i18n";
 
 type UploadRow = {
   key: string;
@@ -68,6 +69,7 @@ const CHANNEL_PRESET: Record<Channel, { customerId: string; segment: Segment; pr
 };
 
 export default function LmsPage() {
+  const { tv, lang } = useI18n();
   const [channel, setChannel] = useState<Channel>("RM_LMS");
   const [customerId, setCustomerId] = useState(CHANNEL_PRESET.RM_LMS.customerId);
   const [segment, setSegment] = useState<Segment>(CHANNEL_PRESET.RM_LMS.segment);
@@ -177,7 +179,7 @@ export default function LmsPage() {
               ? {
                   ...row,
                   status: result.deduplicated ? "deduplicated" : "done",
-                  message: result.deduplicated ? "Đã nộp trước đó — bỏ qua bản trùng" : undefined,
+                  message: result.deduplicated ? tv("Đã nộp trước đó — bỏ qua bản trùng") : undefined,
                 }
               : row,
           ),
@@ -218,10 +220,10 @@ export default function LmsPage() {
     <main className="mx-auto flex max-w-4xl flex-col gap-5 p-8">
       <header>
         <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          LMS — Khởi tạo &amp; Phân luồng Hồ sơ Tín dụng
+          {tv("LMS — Khởi tạo & Phân luồng Hồ sơ Tín dụng")}
         </h1>
         <p className="mt-1 text-sm" style={{ color: "var(--text-muted-2)" }}>
-          Điểm bắt đầu chung cho cả hai kênh khởi tạo — phân luồng ngay khi tiếp nhận.
+          {tv("Điểm bắt đầu chung cho cả hai kênh khởi tạo — phân luồng ngay khi tiếp nhận.")}
         </p>
       </header>
 
@@ -250,11 +252,11 @@ export default function LmsPage() {
               <div className="flex items-center gap-2">
                 <Icon size={16} style={{ color: active ? "var(--brand)" : "var(--text-muted-2)" }} />
                 <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {CHANNEL_LABEL_VI[c].title}
+                  {tv(CHANNEL_LABEL_VI[c].title)}
                 </span>
               </div>
               <p className="mt-1 text-xs" style={{ color: "var(--text-muted-2)" }}>
-                {CHANNEL_LABEL_VI[c].subtitle}
+                {tv(CHANNEL_LABEL_VI[c].subtitle)}
               </p>
             </button>
           );
@@ -262,12 +264,12 @@ export default function LmsPage() {
       </div>
 
       <Card className="flex flex-col gap-4 p-5">
-        <SectionTitle>1 · Thông tin khoản vay</SectionTitle>
+        <SectionTitle>{tv("1 · Thông tin khoản vay")}</SectionTitle>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Mã khách hàng">
+          <Field label={tv("Mã khách hàng")}>
             <input className="lms-input" value={customerId} onChange={(e) => setCustomerId(e.target.value)} disabled={!!routing} />
           </Field>
-          <Field label="Phân khúc">
+          <Field label={tv("Phân khúc")}>
             <select className="lms-input" value={segment} onChange={(e) => setSegment(e.target.value as Segment)} disabled={!!routing}>
               {SEGMENTS.map((s) => (
                 <option key={s} value={s}>
@@ -276,19 +278,19 @@ export default function LmsPage() {
               ))}
             </select>
           </Field>
-          <Field label="Sản phẩm">
+          <Field label={tv("Sản phẩm")}>
             <select className="lms-input" value={product} onChange={(e) => setProduct(e.target.value as Product)} disabled={!!routing}>
               {PRODUCTS.map((p) => (
                 <option key={p} value={p}>
-                  {PRODUCT_LABEL_VI[p]}
+                  {tv(PRODUCT_LABEL_VI[p])}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Số tiền (VND)">
+          <Field label={tv("Số tiền (VND)")}>
             <input className="lms-input" type="number" value={amountVnd} onChange={(e) => setAmountVnd(e.target.value)} disabled={!!routing} />
           </Field>
-          <Field label="Kỳ hạn (tháng)">
+          <Field label={tv("Kỳ hạn (tháng)")}>
             <input className="lms-input" type="number" value={tenorMonths} onChange={(e) => setTenorMonths(e.target.value)} disabled={!!routing} />
           </Field>
         </div>
@@ -297,11 +299,11 @@ export default function LmsPage() {
           {!routing ? (
             <Button variant="primary" onClick={handleSubmitApplication} disabled={busy || !customerId.trim()}>
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Workflow size={14} />}
-              Tiếp nhận &amp; phân luồng
+              {tv("Tiếp nhận & phân luồng")}
             </Button>
           ) : (
             <Button variant="secondary" onClick={reset}>
-              Làm lại
+              {tv("Làm lại")}
             </Button>
           )}
         </div>
@@ -309,7 +311,7 @@ export default function LmsPage() {
 
       {routing && (
         <Card className="flex flex-col gap-3 p-5">
-          <SectionTitle>2 · Kết quả phân luồng</SectionTitle>
+          <SectionTitle>{tv("2 · Kết quả phân luồng")}</SectionTitle>
           <div className="flex items-start gap-2">
             {isGreen ? (
               <Zap size={16} style={{ color: "var(--status-good)", marginTop: 2 }} />
@@ -319,22 +321,21 @@ export default function LmsPage() {
             <div>
               <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                 {isGreen
-                  ? "Luồng xanh → ACAS-SLINK (tự động 100%)"
-                  : "Luồng đỏ → Rà soát hồ sơ & Checklist → Credit Officer"}
+                  ? tv("Luồng xanh → ACAS-SLINK (tự động 100%)")
+                  : tv("Luồng đỏ → Rà soát hồ sơ & Checklist → Credit Officer")}
               </div>
               <p className="mt-1 text-xs" style={{ color: "var(--text-muted-2)" }}>
                 {routing.reason}
               </p>
               {isGreen && (
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted-2)" }}>
-                  Thấu chi MicroSME trong hạn mức tự động — không qua Credit Officer và không
-                  sinh hồ sơ tín dụng.
+                  {tv("Thấu chi MicroSME trong hạn mức tự động — không qua Credit Officer và không sinh hồ sơ tín dụng.")}
                 </p>
               )}
               {isRed && (
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted-2)" }}>
-                  Đã tạo hồ sơ <strong style={{ color: "var(--text-primary)" }}>{routing.case_id}</strong> ở
-                  trạng thái <strong style={{ color: "var(--text-primary)" }}>{status?.state ?? "…"}</strong>.
+                  {tv("Đã tạo hồ sơ")} <strong style={{ color: "var(--text-primary)" }}>{routing.case_id}</strong> {tv("ở trạng thái")}{" "}
+                  <strong style={{ color: "var(--text-primary)" }}>{status?.state ?? "…"}</strong>.
                 </p>
               )}
             </div>
@@ -344,12 +345,12 @@ export default function LmsPage() {
 
       {isGreen && slinkApp && (
         <Card className="flex flex-col gap-4 p-5">
-          <SectionTitle>3 · Chấm điểm tự động ACAS-SLINK</SectionTitle>
+          <SectionTitle>{tv("3 · Chấm điểm tự động ACAS-SLINK")}</SectionTitle>
 
           {slinkApp.status === "QUEUED" || slinkApp.status === "SCORING" ? (
             <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-muted-2)" }}>
               <Loader2 size={15} className="animate-spin" />
-              Đang chấm điểm dòng tiền…
+              {tv("Đang chấm điểm dòng tiền…")}
             </div>
           ) : (
             <>
@@ -361,7 +362,7 @@ export default function LmsPage() {
                 )}
                 <div>
                   <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                    {slinkApp.status === "APPROVED" ? "Đủ điều kiện cấp hạn mức" : "Không đủ điều kiện"}
+                    {slinkApp.status === "APPROVED" ? tv("Đủ điều kiện cấp hạn mức") : tv("Không đủ điều kiện")}
                   </div>
                   <p className="mt-1 text-xs" style={{ color: "var(--text-muted-2)" }}>
                     {slinkApp.decision_reason}
@@ -371,8 +372,8 @@ export default function LmsPage() {
 
               {slinkApp.status === "APPROVED" && slinkApp.recommended_limit_vnd !== null && (
                 <div className="flex gap-6">
-                  <Metric label="Hạn mức khuyến nghị" value={`${slinkApp.recommended_limit_vnd.toLocaleString("vi-VN")} VND`} />
-                  <Metric label="Lãi suất" value={`${slinkApp.interest_rate_pct}%/năm`} />
+                  <Metric label={tv("Hạn mức khuyến nghị")} value={`${slinkApp.recommended_limit_vnd.toLocaleString(lang === "en" ? "en-US" : "vi-VN")} VND`} />
+                  <Metric label={tv("Lãi suất")} value={`${slinkApp.interest_rate_pct}%${tv("/năm")}`} />
                 </div>
               )}
 
@@ -380,7 +381,7 @@ export default function LmsPage() {
                 {slinkApp.agent_decisions.map((d) => (
                   <div key={d.agent_id} className="text-sm">
                     <span className="font-medium" style={{ color: "var(--text-primary)" }}>
-                      {SLINK_AGENT_LABEL_VI[d.agent_id] ?? d.agent_id}
+                      {SLINK_AGENT_LABEL_VI[d.agent_id] ? tv(SLINK_AGENT_LABEL_VI[d.agent_id]) : d.agent_id}
                     </span>
                     <span style={{ color: "var(--text-muted-2)" }}> — {d.summary}</span>
                   </div>
@@ -388,8 +389,7 @@ export default function LmsPage() {
               </div>
 
               <p className="text-xs" style={{ color: "var(--text-muted-2)" }}>
-                Đây là <strong>khuyến nghị</strong>. Việc thực sự cấp hạn mức qua core-banking
-                thuộc lát sau, chưa triển khai.
+                {tv("Đây là")} <strong>{tv("khuyến nghị")}</strong>. {tv("Việc thực sự cấp hạn mức qua core-banking thuộc lát sau, chưa triển khai.")}
               </p>
             </>
           )}
@@ -399,14 +399,14 @@ export default function LmsPage() {
       {isRed && (
         <>
           <Card className="flex flex-col gap-4 p-5">
-            <SectionTitle>3 · Nộp tài liệu</SectionTitle>
+            <SectionTitle>{tv("3 · Nộp tài liệu")}</SectionTitle>
 
             <div className="flex items-end gap-3">
-              <Field label="Loại tài liệu">
+              <Field label={tv("Loại tài liệu")}>
                 <select className="lms-input" value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
                   {DOC_TYPES.map((d) => (
                     <option key={d} value={d}>
-                      {DOC_TYPE_LABEL_VI[d]}
+                      {tv(DOC_TYPE_LABEL_VI[d])}
                     </option>
                   ))}
                 </select>
@@ -414,7 +414,7 @@ export default function LmsPage() {
 
               <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
                 <FileUp size={14} />
-                Chọn file
+                {tv("Chọn file")}
               </Button>
               <input
                 ref={fileInputRef}
@@ -427,8 +427,7 @@ export default function LmsPage() {
             </div>
 
             <p className="text-xs" style={{ color: "var(--text-muted-2)" }}>
-              Chấp nhận PDF, PNG, JPEG — tối đa 20 MB mỗi file. Loại tài liệu do RM chọn,
-              hệ thống chưa tự phân loại.
+              {tv("Chấp nhận PDF, PNG, JPEG — tối đa 20 MB mỗi file. Loại tài liệu do RM chọn, hệ thống chưa tự phân loại.")}
             </p>
 
             {uploads.length > 0 && (
@@ -438,7 +437,7 @@ export default function LmsPage() {
                     <UploadIcon status={row.status} />
                     <span style={{ color: "var(--text-primary)" }}>{row.fileName}</span>
                     <span className="text-xs" style={{ color: "var(--text-muted-2)" }}>
-                      {DOC_TYPE_LABEL_VI[row.docType]}
+                      {tv(DOC_TYPE_LABEL_VI[row.docType])}
                       {row.message ? ` — ${row.message}` : ""}
                     </span>
                   </li>
@@ -448,7 +447,7 @@ export default function LmsPage() {
           </Card>
 
           <Card className="flex flex-col gap-4 p-5">
-            <SectionTitle>4 · Checklist hồ sơ</SectionTitle>
+            <SectionTitle>{tv("4 · Checklist hồ sơ")}</SectionTitle>
 
             <ul className="flex flex-col gap-1.5">
               {DOC_TYPES.map((d) => {
@@ -461,7 +460,7 @@ export default function LmsPage() {
                       <CircleDashed size={15} style={{ color: "var(--text-muted-2)" }} />
                     )}
                     <span style={{ color: done ? "var(--text-primary)" : "var(--text-muted-2)" }}>
-                      {DOC_TYPE_LABEL_VI[d]}
+                      {tv(DOC_TYPE_LABEL_VI[d])}
                     </span>
                   </li>
                 );
@@ -470,15 +469,14 @@ export default function LmsPage() {
 
             {status && status.missing.length > 0 && (
               <p className="text-xs" style={{ color: "var(--text-muted-2)" }}>
-                Còn thiếu {status.missing.length} loại. Vẫn nộp được — hệ thống sẽ trả về
-                NEED_INFO để bổ sung sau.
+                {tv("Còn thiếu {n} loại. Vẫn nộp được — hệ thống sẽ trả về NEED_INFO để bổ sung sau.", { n: status.missing.length })}
               </p>
             )}
 
             <div>
               <Button variant="primary" onClick={handleSubmitForReview} disabled={busy || !status?.can_submit}>
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Vào hàng chờ Credit Officer
+                {tv("Vào hàng chờ Credit Officer")}
               </Button>
             </div>
           </Card>
