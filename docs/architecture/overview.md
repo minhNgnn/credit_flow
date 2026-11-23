@@ -1,3 +1,95 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SHBExpert Flow — Architecture Overview, 1-VM topology (English)
+
+> The full original text (Vietnamese) follows below this English version. Diagrams, tables and code in the Vietnamese section are the authoritative detail; this English section is a faithful condensed version.
+
+> **Governance notice (from the PRD):** every checklist, policy, threshold, hard gate, scorecard weight and approval flow here is a **simulation for the competition**, not SHB's official process. The system produces **recommendations** for the Credit Officer; it does not approve, sign or disburse. All data is synthetic.
+
+Reading order of the architecture set: **`overview.md`** (this file: what the system contains, where it runs, who calls whom, safety boundaries) → [`ai-architecture_v2.md`](./ai-architecture_v2.md) (the AI brain; v2 is authoritative) → [`data-flow.md`](./data-flow.md) (how data flows, with sequence/state diagrams). Business source: `PRD1.1.docx` (SHBExpert Flow v1.0, 17/07/2026). This document does not replace the PRD — it translates it into technical decisions.
+
+## 1. Purpose and scope
+
+SHBExpert Flow is an SME credit-appraisal workspace: an Orchestrator plans and delegates to expert agents, challenger agents critique structurally, and everything is merged into an evidence-backed recommendation for the Credit Officer.
+
+The MVP runs **entirely on one Linux server** with Docker Compose — a deliberate choice, not a limitation:
+- **48 hours of development**: time goes to agents, evidence and audit — not Kubernetes, service mesh or multi-region CI/CD.
+- **The demo must survive a dead network.** PRD 14.4 requires deterministic mock APIs with no dependency on external internet. A self-contained VM can do that; a distributed architecture cannot.
+- **Nothing to scale.** The demo is 6 golden cases and a 30-case eval; concurrent load is a few users in the exam room.
+
+**Out of scope** (PRD 3.3): production integration with real Core Banking, LOS, CIC, AML, data warehouse or valuation systems; binding approval; contract signing; real disbursement; real customer data.
+
+**Recommended VM:** Ubuntu 22.04 LTS, 4 vCPU / 16 GB RAM / 100 GB SSD, no GPU (all LLM work goes through provider APIs; OCR runs on CPU). Vendor-neutral — any Linux VM or a team laptop for offline demos.
+
+## 2. 1-VM topology
+
+Browser (CO · RM · Credit Admin) → HTTPS → **proxy (Caddy, :80/:443, the only published ports)** → `web` (Next.js :3000) and `api` (FastAPI :8000). Inside the VM: `worker` (LangGraph runtime), `tools-mock` (FastAPI :8100), and shared infrastructure — `postgres` (CaseState, event log), `qdrant` (policy/legal/industry vectors), `redis` (job queue, pub/sub), `minio` (documents + hash), optional `langfuse` (:3001). **Only two paths cross the VM boundary:** the browser into `proxy`, and `worker` out to the LLM provider.
+
+## 3. Service catalogue
+
+Application services (`web`, `api`, `worker`, `tools-mock`) and shared infrastructure (`postgres`, `qdrant`, `redis`, `minio`, optional `langfuse`) are described in the root [README](../../README.md#1-what-the-system-contains) and tabulated in the Vietnamese section below.
+
+## 4. Who calls whom
+
+`browser → proxy → web / api`; `web → api` (REST + SSE via proxy); `api → postgres` (SQL), `minio` (S3 presigned URLs), `redis` (enqueue jobs, subscribe to progress); `worker → redis` (dequeue, publish progress), `postgres` (state layer), `minio` (read documents), `qdrant` (filtered vector search), `tools-mock` (tool calls), LLM provider (HTTPS).
+
+**Who must NOT call whom** — negative constraints matter as much as positive ones:
+
+| Rule | Why |
+|---|---|
+| `web` never calls `postgres`/`qdrant`/`minio`/`tools-mock` directly — everything goes through `api` | RBAC and field-level permission are enforced in one place; a shortcut would silently void PRD 8.3. |
+| Expert agents do not write to `postgres` directly | PRD 5.1: *"No agent writes to a source system on its own."* Agents return schema-valid Findings; the Orchestrator's state layer writes them with version + audit event. |
+| An agent never calls a tool outside its allowlist | PRD 10.4 — shrinks the prompt-injection surface. The Financial Agent cannot call `search_policy` even if a document tells it to. |
+| Only the Orchestrator calls side-effect tools (`create_info_request`, `update_case_status`, `create_condition_tasks`) | Experts only analyse; centralising state changes keeps idempotency keys and audit events complete. |
+| No container reaches the internet except `worker` → LLM provider | PRD 14.4: the demo does not depend on external internet. |
+| `tools-mock` never calls back into `api` | Tools are pure functions; callbacks would create loops and break replay determinism. |
+
+## 5. Trust and network boundaries
+
+Two Docker networks: `edge` (only `proxy`, publishing 80/443) and `internal` (everything else, no published ports). Use `docker compose exec` to debug Postgres — never open the port. Host firewall: 22 (SSH, team IPs only) and 443 only. Secrets live in `.env` (uncommitted) and are injected via Compose; they must **never enter prompts or logs** (PRD 11.2) — `api` and `worker` run a log redaction filter. Containers run non-root with read-only filesystems where possible. No real data: even if the infrastructure leaked, the contents are synthetic (PRD 9.6).
+
+## 6. Safety principles and where each is enforced
+
+| # | Principle | Enforced in |
+|---|---|---|
+| 1 | **No real side effects** — the system never approves, rejects, signs, disburses or changes limits on a real system | `tools-mock`: no such tool *exists* (not an `if`, an absent API) |
+| 2 | State-changing tools need authorization, schema validation, an idempotency key and an audit event | `api`: one wrapper for every side-effect tool; missing any → rejected |
+| 3 | **Evidence is mandatory**; otherwise `INSUFFICIENT_EVIDENCE` / `NEED_DATA`, never invent | `worker` claim validator after every agent |
+| 4 | **Deterministic computation**: ratios and hard rules run as code, storing `input`/`output`/`formula_version`; the LLM only explains | `worker` deterministic functions + rule engine |
+| 5 | **Document content is data, not instructions** | `worker`: documents enter labelled data blocks, never the instruction part; per-step tool allowlists; a dedicated test with "ignore the policy" text |
+| 6 | **Append-only audit + document hash**; new documents create new versions | `postgres` (no `UPDATE`/`DELETE` grant on events), `minio` versioning + hash |
+| 7 | **Every loop has a brake**: max 2 challenge rounds, retry ≤ 1, per-task timeout, token cap per run | LangGraph stop conditions, not prompts |
+| 8 | **RBAC + field-level permission** — an RM does not see internal scores or sensitive AML alerts by default | `api`, per field |
+| 9 | **Human-in-the-loop** at decision points: CO accept/edit/rerun/return/override; edit and override **require a reason**; every action bumps the version | `api` + `web` |
+| 10 | Separate labels: fact · inference · policy rule · recommendation · human edit | `claim_type` in the Finding schema + text labels in `web` |
+| 11 | **Synthetic data only** | seeded generators + validation before seeding the DB |
+
+**Root principle:** fail loudly, never guess. Missing evidence is stated; a failed agent shows "interim recommendation – missing domain X" instead of silently merging the rest; unresolved challenges after two rounds put both views into dissent for the CO.
+
+## 7. NFRs mapped onto the topology
+
+NFR-01 groundedness (claim validator, evidence index, presigned URLs) · NFR-02 latency ≤ 120s per demo case (parallel experts, model tiering, redis pub/sub → SSE) · NFR-03 reliability (LangGraph checkpoints in postgres; results written as each agent finishes) · NFR-04 reproducibility (append-only event log + checkpoints + fixed seeds + deterministic `tools-mock`) · NFR-05 explainability (`claim_type`, `evidence_ids`, `formula_version`, `policy_version`) · NFR-06 security (synthetic data, field-level RBAC, redaction, side-effect wrapper) · NFR-07 accessibility (text labels `PASS`/`FAIL`/`REVIEW_REQUIRED`/`NEED_DATA`, not colour alone) · NFR-08 cost control (langfuse or a trace table; model tiering).
+
+## 8. Operations
+
+```bash
+cp .env.example .env      # LLM API key, DB password, MinIO key
+docker compose up -d
+docker compose run --rm api alembic upgrade head
+docker compose run --rm worker python -m scripts.seed_policies
+docker compose run --rm api python -m scripts.seed_cases
+```
+Healthcheck order: `postgres`·`redis`·`qdrant`·`minio` → `api`·`tools-mock` → `worker` → `web` → `proxy`. Back up `pg_data`, `minio_data`, `qdrant_data` before a demo (`redis` deliberately has no volume). **Replay mode** (`DEMO_REPLAY=true`): `tools-mock` returns fixed seeded results; if the LLM times out, `web` loads the saved run from the event log. Observe with `docker compose logs -f worker`; the Audit tab reads the event log directly and is the source of truth for judges.
+
+## 9. Read next
+[`ai-architecture_v2.md`](./ai-architecture_v2.md) · [`data-flow.md`](./data-flow.md)
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # SHBExpert Flow — Kiến trúc tổng quan (Topology 1-VM)
 
 > **Bộ tài liệu kiến trúc** — 3 file, đọc theo thứ tự:

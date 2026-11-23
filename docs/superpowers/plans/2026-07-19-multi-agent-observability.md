@@ -1,3 +1,21 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Multi-Agent Observability Dashboard — Implementation Plan (English)
+
+> Implementation plan. The English section below summarises goal, architecture and task breakdown; the full task-by-task steps, commands and code are in the original text that follows (Vietnamese comments, English code).
+
+**Goal:** ship a banking-style Next.js dashboard with 4 tabs (Status / Traces / Decisions / Collaboration) observing the multi-agent LangGraph credit-analysis pipeline, backed by an on-prem Langfuse trace store and the existing Postgres events log.
+
+**Architecture:** the Langfuse Python SDK decorates `worker/app/llm/adapter.py::complete()`, and a new `worker/app/observability/tracing.py` exposes `trace_case_run()` + `call_tool()` for graph nodes and MCP tool calls; the Next.js dashboard reads existing FastAPI endpoints. **Stack:** Python 3.11, LangGraph, langfuse v3 SDK, FastAPI, redis, SQLAlchemy 2.0, Next.js 15 (App Router), React 19, recharts, Tailwind v4, SHB Design System tokens. Spec: `docs/superpowers/specs/2026-07-19-multi-agent-observability-design.md`. **Key constraint:** the trace join key is `langfuse.trace.id == case_id` (via metadata); never invent a separate `trace_id` column in Postgres for v1.
+
+**Tasks:** 1 Langfuse Docker service + env config · 2 Tracing module · 3 Decorate `adapter.complete()` and `stream_complete()` · 4 Wire tracing into `worker/app/main.py`, `graph/build.py` and agents · 5 API router `/observability/cases/{case_id}/trace` · 6 Dashboard shell + Status tab · 7 Decisions tab · 8 Traces tab (Langfuse proxy + Gantt timeline) · 9 Collaboration tab (animated graph + SSE) · 10 End-to-end smoke test.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Multi-Agent Observability Dashboard Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

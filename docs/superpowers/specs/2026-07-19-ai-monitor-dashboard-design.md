@@ -1,3 +1,26 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# AI Monitor Dashboard — Design (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/multi-agent-observability` (worktree) · **Stack:** `shbexpert-flow-obs` · **Scope:** ~6–12 hours, hackathon day 4 · **Deliverable:** a `/monitor` route for judges/IT to assess the multi-agent product, across three observability layers with **query-time aggregation (no new tables or workers)**.
+
+## 1. Goals and scope
+Show all three layers: **Trace** (LLM prompt/response, tool call I/O, graph progress — already in Langfuse; the monitor consumes it through the Langfuse proxy); **Logs** (real-time event stream + the worker's last 200 stdout lines via the Docker API); **Metrics** (Postgres aggregation over `events/findings/conflicts/decisions/cases` + Langfuse REST: case-state distribution, latency per node/tool, stance/severity/conflict quality, LLM call distribution).
+
+**In scope:** Next.js routes `/monitor` and `/monitor/cases/[caseId]` (own layout, brand "SHB Expert Flow · AI Monitor"); `GET /api/monitor/overview` (several SQL GROUP BYs in one request); `GET /api/monitor/logs` (200 worker lines); 7 recharts/SVG chart components with SHB tokens; a KPI strip (cases, drafts, findings, conflicts, traces, LLM calls); live SSE for the 5 most recent cases feeding the activity feed and the state donut.
+
+**Out of scope (YAGNI):** materialised timeseries tables; alerting and incident history; PDF/PNG export; multi-tenant/user picker; p90/p99 (avg + max only); token cost in USD (the FPT AI SDK does not expose usage → show "# LLM calls"); latency-by-hour heatmap; login (Langfuse already has its UI; the monitor is read-only).
+
+Sections 2–11 (data collection per layer, route layout, 3×2 UI grid, files, fixed interfaces, SHB design-system styling, live feed, degradation, testing, references) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # AI Monitor Dashboard — Design
 
 - **Ngày**: 2026-07-19

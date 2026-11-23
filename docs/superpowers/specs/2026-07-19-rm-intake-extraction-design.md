@@ -1,3 +1,34 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# OCR/LLM Data Extraction — backend layer (slice 2) (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/lms-rm-upload` · **Status:** awaiting approval
+
+## 1. Context
+Slice 1 built the red lane's write path (RM submits a case → `Case` + `Document` in Postgres/MinIO) but left `extracted_fields` empty — until now only seed scripts populate it. Target pipeline: *RM submits → MinIO → OCR/extraction → `extracted_fields` → checklist → routing.*
+
+## 3. Architecture
+Each successful `POST /cases/{id}/documents` enqueues a job on `EXTRACTION_QUEUE`. The worker has its own consumer, `_consume_extraction_jobs()` (same pattern as `_consume_slink_jobs()`, separate queue so one bad job cannot block others), which calls `run_extraction()` in `worker/app/agents/extraction.py`:
+1. download the bytes from MinIO (`shared/storage.py::get_object_bytes`)
+2. parse by format → `list[Anchor(line_id, text, page, bbox | cell_ref)]`
+3. deterministic label matching (`labels.py`) — matched fields **skip the LLM**
+4. fields still missing → `complete_json()` (tier `extraction`)
+5. write `ExtractedField` using the `field_id` resolved from real anchors
+
+`extracted_fields` then feeds `financial.py` and the other agents as before.
+
+**Key point: the LLM never invents coordinates or cell references.** Real anchors (bbox from PyMuPDF/Tesseract, cell_ref from openpyxl) get a numbered `line_id` before going into the prompt; the LLM only answers "field X is at line_id Y", and backend code maps `line_id → bbox/cell_ref` from the parser's own data. This is the only way to honour slice 1 §7 ("scanned PDFs must be OCR'd with real coordinates") without relying on an LLM's unreliable coordinates.
+
+Sections 4–11 (parsing per format, field catalog per `doc_type`, structured LLM output, new infrastructure, error handling, risks, verification, decisions) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Trích xuất dữ liệu bằng OCR/LLM — tầng backend (lát 2)
 
 Ngày: 2026-07-19

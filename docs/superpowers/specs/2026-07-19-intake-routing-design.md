@@ -1,3 +1,32 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Green/Red Lane Routing at Intake — slice (a) (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/lms-rm-upload` · **Status:** awaiting approval
+
+## 1. Context
+The business diagram describes the LMS as the **shared entry point for both origination channels**, with a Planner Agent routing at intake: *Credit Application (RM)* and *Mobile Banking KHDN* → Planner Agent (product + limit) → **Red lane** → checklist → Credit Officer, or **Green lane** → ACAS-SLINK (100% automated). Today only the red lane exists: `POST /cases` creates a `Case` in `DRAFT` without asking whether it qualifies for automatic approval. Slice 1 built the red lane's write path (create case, upload documents, checklist, submit); this slice adds **the fork in front of it**. Later slices: (b) SLINK domain + automated decision engine (Profile, Cashflow, Behavioural, Sizing, Risk); (c) an Operations layer that grants/adjusts/suspends limits through a core-banking mock.
+
+## 2. Key decision: a green-lane application is NOT a `Case`
+This is the most important decision of the slice, and it runs against the original framing ("add a state that skips the Credit Officer").
+
+## 4. Routing rule — deterministic, no LLM
+The "Planner Agent" in the diagram is a classification rule, not a language model, kept deterministic so the demo repeats (PRD 14.4):
+
+`GREEN ⟺ product == "MICRO_OD" AND segment == "MICROSME" AND amount_vnd <= 300,000,000`; `RED` otherwise. The thresholds come from the reference implementation's `registries.ts`.
+
+**Machine codes, not Vietnamese strings:** `MICRO_OD` (corporate overdraft — green if MicroSME and ≤ 300M), `SME_WC` (SME working-capital loan — red), `SME_TERM` (fixed-asset investment loan — red). Vietnamese names are display-only: using accented strings as comparison keys breaks silently on a spelling change and the case lands in the wrong lane instead of raising an error. Constants live in `shared/constants.py` next to `REQUIRED_DOC_TYPES`, so api and worker share one source.
+
+Sections 3, 5–10 (slice scope, API contract, the `routing_decisions` table, error handling, verification, risks, decisions taken) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Phân luồng xanh/đỏ khi tiếp nhận hồ sơ — lát (a)
 
 Ngày: 2026-07-19

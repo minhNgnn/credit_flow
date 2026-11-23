@@ -1,3 +1,46 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SLINK Domain + Automated Scoring Engine — slice (b) (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/lms-rm-upload` · **Status:** awaiting approval
+
+## 1. Context
+Slice (a) built the green/red fork, but the green lane **stops at recording** — there is a `routing_decisions` row with `lane=GREEN` and nothing runs afterwards. This slice builds the green lane's path: the SLINK entity, a deterministic scoring engine, and a recommended limit. **Slice (b) ends at a recorded decision + recommended limit**; actually granting the limit belongs to slice (c).
+
+## 3. Three outcomes of `POST /intake/submissions`
+Deciding that "no SLINK history ⇒ red lane" turns the endpoint from two branches into three:
+
+| # | Condition | Recorded lane | Returns |
+|---|---|---|---|
+| (a) | slice (a)'s rule does not pass | `RED` | `case_id`, synchronous |
+| (b) | rule passes **but** slink-mock returns 404 | `RED` | `case_id`, synchronous, with a `reason` explaining the demotion |
+| (c) | rule passes **and** the merchant exists | `GREEN` | `slink_application_id`, **queued**, no decision yet |
+
+`classify_lane` in `shared/routing.py` stays untouched: it is **pure** (no DB, no network) with 6 green tests, and the merchant-exists check is composed in the endpoint, not inside it.
+
+## 6. Engine — five agents, all deterministic
+Ported from `shb_credit_agents/src/acas/lib/agents.ts` (read side only); no LLM, so the demo repeats (PRD 14.4):
+
+| Agent | Input | Output |
+|---|---|---|
+| `profile` | industry, seasonality, tenure | industry classification |
+| `cashflow` | 60-day series | average monthly revenue, MoM growth, volatility, silent days |
+| `behavioural` | CASA, payment history, counterparties, tenure | behavioural score 0–100 |
+| `sizing_pricing` | average revenue + behavioural score | proposed limit + interest rate |
+| `risk_compliance` | circular-transaction flag, night-transaction ratio | approve / block |
+
+Behavioural score = `0.5·casa_retention_pct + 0.5·payment_history_score + counterparty_bonus (trusted +10, average 0, needs-verification −15) + tenure_bonus (≥24 months: +5)`, clamped to [0, 100]. `risk_compliance` has a **hard block**: `circular_transaction_flag` on ⇒ `REJECTED` regardless of score. The code lives in its own tree `worker/app/slink/`, not mixed into `worker/app/agents/` (red-lane agents).
+
+Sections 2, 4, 5, 7–10 (data gaps the engine needs, the SLINK domain, async execution, API contract, out of scope, verification, decisions) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Domain SLINK + engine chấm điểm tự động — lát (b)
 
 Ngày: 2026-07-19

@@ -1,3 +1,47 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Report: existing data vs PRD 1.1 — Section 9 (English)
+
+Compared on 18/07/2026. Scope: data committed on branch `tuananh/synthetic-data-pipeline`, checked directly against PRD 1.1 §9.1–9.6.
+
+## 1. Short conclusion
+
+The current dataset is **good enough as a structured master pool for agent development and integration testing**, but **is not yet a complete benchmark per PRD §9**.
+
+- **11 of 12** data groups from §9.1 exist; the missing one is `Workflow & audit`.
+- Judged strictly on minimum fields and formats: **4 groups fully match, 7 partially, 1 missing**.
+- Present: 120 customers, 120 loan applications, 14,811 transactions, 18 policy documents and 4 cases with deliberate defects.
+- Missing: the 6 golden cases, the 30 evaluation cases, the outcome distribution, at least 10 conflict cases and the mandatory ground-truth labels.
+- No PDFs remain in the dataset — a **deliberate decision to move to JSON/JSONL**, not an export bug. So the data tests logic/rules/agents but not OCR, scans or citation to page/bounding box.
+
+In short: **schema coverage is fairly good; evaluation readiness is lacking.**
+
+## 8. Next steps to meet section 9
+
+**P0 — needed before evaluating agents:** add `party_master` (resolve representatives, related parties, asset owners); add `workflow_events.jsonl` (case state, task, actor, timestamp, input/output hash, latency, error, rerun relation); package the 6 golden cases C01–C06, then build 30 eval cases with the correct outcome distribution; create private ground truth for extraction, completeness, findings, conflicts, decision and action trace; add transaction `description` plus four labelled pattern families (seasonality, circular flow, counterparty concentration, unusual receipts); add policy rule bodies, conditions, exceptions and a policy-pack manifest; create a `train/demo/eval` split manifest so the application never sees gold labels.
+
+**P1 — richer data:** financial-statement notes and line items; collateral description in the master schema; source URL, retrieved date and transformation lineage for each industry observation; mutation manifest with expected severity, evidence IDs, outcome and impacted tasks.
+
+**P2 — only if OCR/multimodal benchmarking is needed:** render a small set of PDFs/images from canonical JSON, produce controlled blurred/expired/contradictory scans, store bounding-box/page ground truth.
+
+## 9. A scope mismatch outside section 9
+The PRD limits the MVP to loans/limits of at most 10 billion VND, but **38 of 120 applications exceed 10 billion** (largest 13,844,837,000 VND).
+
+## 10. How to re-verify
+```
+python -m synthetic_data_pipeline validate --customers 120
+python -m pytest -q
+```
+Expected: validation passes and all tests pass. `validate` needs no API key; only `enrich-narratives` uses one.
+
+Sections 2–7 (how the data is built and linked, current inventory, per-dataset comparison against §9.1, scale and ground truth for §9.2–9.6, quality guardrails, the four sample cases) are in the Vietnamese section below.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Báo cáo dữ liệu hiện có và mức độ khớp PRD 1.1 — Mục 9
 
 Ngày đối chiếu: 18/07/2026

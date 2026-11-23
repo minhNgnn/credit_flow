@@ -1,3 +1,44 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SHBExpert Flow — AI Architecture v2 (English)
+
+**This is the authoritative architecture document.** Status: target architecture for the hackathon — **not** a description of everything currently running. Scope: help the Credit Officer analyse, ask follow-ups, prepare a submission package and hand over results; **it never approves credit on its own**. Baseline date 2026-07-18 (commit `0b6fef3`); later work added the **evaluation harness** (§16, `eval/`), **hard gates G7–G9** (§13, `worker/app/graph/decision.py`) and **prompt-injection defence** (§14.2, `worker/app/llm/sanitize.py`). `overview.md` and `data-flow.md` have not been migrated to v2 and are not authoritative.
+
+## 0. How to read status labels
+
+| Label | Meaning |
+|---|---|
+| **CURRENT** | Exists in the implementation baseline (still check code/tests for completeness) |
+| **TARGET v2** | Designed, to be implemented — must not be demoed or described as working |
+| **MOCK** | Hackathon assumption/data/process, versioned and watermarked; does not represent SHB policy |
+| **OPEN** | Needs a domain expert, policy owner or tool owner to confirm before productionising |
+
+Unless a passage says **CURRENT**, every contract, component, state machine and gate in §1–16 is **TARGET v2**.
+
+## 1. Architecture decisions (seven)
+
+1. **The Orchestrator coordinates, it does not appraise.** It manages tasks, dependencies, timeouts, retries, conflicts and targeted reruns; it gives no financial/legal opinion, does not choose the approval level and never creates an `OfficialDecision`.
+2. **Experts are multi-turn workcells**, not one-shot report generators: each has a work queue, typed state, tool allowlist, evidence-sufficiency loop, SLA and handoff.
+3. **`ExpertResult` is the whole output; `Finding` is a single atomic claim.** Ratio tables, calculations, data gaps and limitations are separate artifacts.
+4. **Citation architecture is backed by a provenance graph.** A `Citation` is only a pointer for the reader; any sentence in a submission must trace back through ClaimSupport to the finding version, the calculation, each input and the source locator.
+5. **Tools are defined only by contract here.** Formulas/implementations belong to the tool owner in a versioned Formula/Rule Registry.
+6. **The router works by object owner, outcome and capability** — no closed intent enum. Finite action classes are used only for authorization, tool filtering and the harness.
+7. **An AI recommendation is not a credit decision.** After the recommendation the system only builds a submission package from a mock template; the recipient is mock-configured or chosen by the Credit Officer.
+
+Three artifacts must never be conflated: **`RecommendationPackage`** (Recommendation Synthesis; verified-finding-based; cannot change mock case state), **`ApprovalSubmissionPackage`** (Approval Package Builder + Credit Officer; mock template; cannot change state), **`OfficialDecision`** (an authorised person via the Mock Authority Inbox; may change **mock** workflow state only — no credit, legal or SHB authority).
+
+**Non-goals:** no inference of SHB's authority matrix/limits/approvers; no auto approve/reject, booking, disbursement or official customer notices; no web look-ups to fill missing private customer data; no LLM-computed ratios/hard rules/material reconciliations; transcripts/model memory/MCP sessions are never the source of truth; **no claim that multi-agent beats single-agent without an ablation and measurements** (see [`../eval-multi-vs-single-agent.md`](../eval-multi-vs-single-agent.md)).
+
+## Section map
+
+2 Grounds and limits of inference · 3 Overall architecture · 4 Components and responsibility boundaries · 5 Identifiers, state and versioning · 6 Bounded Orchestrator · 7 Multi-turn Expert Workcell · 8 Expert output contract · 9 Evidence, calculation and citation architecture · 10 Tools, Capability Registry and MCP boundary · 11 Follow-up Router for the Credit Officer · 12 Blackboard, collaboration and conflicts · 13 Recommendation, submission package and post-decision · 14 Guardrails, security and audit · 15 Failure handling and degraded modes · 16 Evaluation harness (citation, guardrail, harness) · 17 Current implementation and migration path (gap table) · 18 Mock assumptions and open questions · 19 References · 20 Definition of done for v2.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # SHBExpert Flow — Kiến trúc AI v2
 
 > **Trạng thái:** Target architecture cho hackathon; không phải mô tả đầy đủ code đang chạy.

@@ -1,3 +1,52 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Synthetic Data Pipeline Plan (English)
+
+## 1. Goal and principles
+
+The pipeline builds the **11 master datasets of Table 9 first**, checks consistency and freezes clean data; the `Case Assembler` only takes snapshots and applies deliberate defects.
+
+- Numbers, IDs, dates, policy versions, hard gates and gold labels are produced by **deterministic code**.
+- Data Designer / OpenAI only enriches narrative that does not decide outcomes.
+- Clean data and mutation overlays are separate; frozen master data is never edited in place.
+- Every record carries keys, `as_of_date`, version, seed, provenance and a synthetic flag.
+- Ground truth is not in the runtime/RAG corpus.
+- Never crawl real customer files, CIC, KYC, collateral or personal data.
+
+## 2. Dataset-first architecture
+Whitelisted public sources → reference datasets → industry + mock policy → customer master → credit application / legal-KYC-CIC → financial / collateral → transactions → SHB relationship → cross-dataset validator → **frozen clean master datasets** → mutation overlays → Case Assembler (last step).
+
+## 3. P0 master-pool size
+
+| Dataset | P0 size |
+|---|---|
+| Customer master | 120 customers, 12 industries |
+| Credit application | 120 active applications |
+| Legal documents | ~600 document records |
+| Financial statements | 3 years + latest period per customer |
+| Account transactions | 50–200 rows per customer |
+| CIC mock | 1 report per customer, 0–5 facilities |
+| KYC/AML mock | customer, representative, related parties |
+| Collateral | 1–2 real-estate assets per application |
+| SHB relationship mock | 1–3 accounts per customer |
+| Policy / rulebook | 6 policy families × 3 versions |
+| Industry data | 12 industries × 8 quarters |
+
+Canonical tabular data is kept in Parquet/JSONL; the listed formats are delivery views for agents.
+
+## 4–8. Outline
+4 Data factories (one per dataset: customer master, credit application, legal documents, financial statements, account transactions, CIC mock, KYC/AML mock, collateral, SHB relationship, policy/rulebook, industry data) · 5 Crawl and provenance (auto-snapshot whitelist; manual curation; never-crawl list) · 6 Data Designer/OpenAI boundary · 7 Freeze, mutations and case assembly · 8 CLI and build gates.
+
+**CLI:** `mockdata refs sync` → `schema validate` → `generate …` → `enrich-narratives` → `validate dataset --all` → `freeze --version clean-v1` → `mutate --catalog default` → `assemble --split demo|blind-eval`. `assemble` is blocked if the masters are not frozen or validation has not passed.
+
+**Hard gates:** 100% schema/primary-key/foreign-key/temporal integrity; 100% financial, transaction, exposure, turnover and collateral reconciliation; 100% policy effective-date/version correctness; 100% JSON-Pointer/record locators resolve; 100% planned mutations present and no critical contradiction outside the manifest; same seed/config/version ⇒ same canonical values and deterministic hashes; no real PII, every document watermarked; the runtime corpus contains no private canonical truth or evaluation gold. Workflow/audit is auto-generated metadata (event, actor, input/output hash, duration, generator version, error), not a business-data factory.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Synthetic Data Pipeline Plan
 
 ## 1. Mục tiêu và nguyên tắc

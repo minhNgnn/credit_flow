@@ -1,3 +1,74 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SHBExpert Flow documentation — where to start (English)
+
+> **The authoritative architecture document is [`architecture/ai-architecture_v2.md`](architecture/ai-architecture_v2.md).** `ai-architecture.md` (v1) is kept as a historical reference; `overview.md` and `data-flow.md` describe topology and data flow and are still useful, but where they conflict with v2, v2 wins.
+
+All data in the system is **synthetic**, declared on every case (`synthetic_flag`). The system only produces **recommendations** for the Credit Officer — it does not approve, sign or disburse. All checklists/thresholds/weights are **simulations for the competition**, not SHB's official risk process.
+
+## Read by purpose
+
+| You want to know | Read | Lines |
+|---|---|---|
+| What the system contains, which service calls which | [`architecture/overview.md`](architecture/overview.md) | 267 |
+| AI architecture: Orchestrator, Expert Workcell, evidence, tool boundary | [`architecture/ai-architecture_v2.md`](architecture/ai-architecture_v2.md) | 1884 |
+| How data flows, the state machine, decision diagrams | [`architecture/data-flow.md`](architecture/data-flow.md) | 571 |
+| **Is multi-agent really better than single-agent — with numbers** | [`eval-multi-vs-single-agent.md`](eval-multi-vs-single-agent.md) | 463 |
+| **AI safety: grounding, anti-hallucination, prompt injection, audit** | [`ai-safety-grounding.md`](ai-safety-grounding.md) | 134 |
+| How the synthetic data is generated | [`synthetic-data-pipeline-plan.md`](synthetic-data-pipeline-plan.md) | 256 |
+| Data gaps versus PRD §9 | [`data-prd9-matching-report.md`](data-prd9-matching-report.md) | 183 |
+
+## What is RUNNING vs. what is still design
+
+`ai-architecture_v2.md` labels every item **CURRENT / TARGET v2 / MOCK / OPEN** (see its §0). A quick summary so you do not have to read all 1884 lines:
+
+### Running for real (CURRENT)
+
+| Capability | Evidence in code |
+|---|---|
+| Orchestrator + 4 parallel expert agents, with a conflict detector and challenge loop | `worker/app/graph/build.py` (LangGraph, Postgres checkpoint) |
+| Real MCP tool boundary: 4 separate servers, per-agent tool permissions | `mcp-deterministic` / `mcp-rag` / `mcp-external` / `mcp-state` |
+| Deterministic computation — the LLM never computes numbers itself | `mcp-deterministic/app/server.py`, each result carries a `formula_version` |
+| Hard gates G1–G9 run BEFORE the scorecard | `worker/app/graph/decision.py::_check_hard_gates` |
+| Evidence is mandatory for HIGH/CRITICAL findings | `shared/state.py::write_finding` → `EvidenceRequiredError` |
+| Append-only audit log, UPDATE/DELETE revoked at the DB layer | `api/alembic/versions/0002_revoke_events_mutation.py` |
+| **Single-agent vs multi-agent eval harness** — 24 cases × 3 runs × 2 variants = 144 real runs | [`../eval/`](../eval/), results in [`../eval/compare/summary.md`](../eval/compare/summary.md) |
+| **Prompt-injection defence** for untrusted content | `worker/app/llm/sanitize.py` |
+| Chat Orchestrator (case follow-up questions, streaming) | `worker/app/chat/orchestrator.py` |
+| Dashboard: queue, overview, expert council, conflicts, recommendation, audit | `web/app/` (Next.js) |
+
+### Still design (TARGET v2) or missing
+
+The full list is in `ai-architecture_v2.md` §17 and `ai-safety-grounding.md` §6. The most notable items, **disclosed rather than hidden**:
+
+- **No RBAC/auth yet** — stated in `api/app/routers/internal.py`.
+- **Gate G2 (KYC) fails open** when the Customer 360 finding is missing (`decision.py`).
+- **No leverage gate** — the `HIGH_LEVERAGE` archetype can still yield `APPROVE`; the eval publishes this number instead of ignoring it.
+- **The 5th agent (Industry) is a placeholder** — the `INDUSTRY_GOVERNANCE` score is fixed.
+- **No Document Processing / OCR** — `extracted_fields` are written by seed scripts.
+- **No automated tests or CI yet.**
+
+## Headline numbers (measured, not estimated)
+
+From [`eval-multi-vs-single-agent.md`](eval-multi-vs-single-agent.md) — same model (Llama-3.3-70B via FPT AI Factory), same test set, only the architecture differs:
+
+| Metric | single-agent | multi-agent |
+|---|---|---|
+| Correct decision | 0.125 | **0.875** |
+| Numeric accuracy | 0.117 | **0.801** |
+| Risk recall | 0.651 | **1.000** |
+| Stability (pass³) | 0.708 | **1.000** |
+| False alarms (lower is better) | 0.125 | **0** |
+| Run time | **~10.9s** | ~20.9s |
+
+This eval also **found a real safety bug** in the system itself (customers with CIC group 3–4 debt were still `APPROVE`d). It was fixed with hard gates G7–G9 and re-verified with numbers: `decision_correct` 0.500 → 0.875. Details in [`ai-safety-grounding.md`](ai-safety-grounding.md) §4.1.
+
+---
+
+<a id="vi"></a>
+
+# 🇻🇳 Tiếng Việt
+
 # Tài liệu SHBExpert Flow — đọc từ đâu
 
 > **Bản authoritative về kiến trúc là [`architecture/ai-architecture_v2.md`](architecture/ai-architecture_v2.md).**
