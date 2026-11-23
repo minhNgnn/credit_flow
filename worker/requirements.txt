@@ -1,0 +1,44 @@
+# Fast-moving packages pinned with a floor, not an exact version — the
+# image is built with real PyPI access, so let pip resolve the latest
+# compatible release rather than risk an exact pin that no longer exists.
+langgraph>=0.2.60
+langgraph-checkpoint-postgres>=2.0.0
+psycopg[binary,pool]>=3.2.0
+langchain-core>=0.3.25
+# Pinned exactly: langchain-mcp-adapters==0.3.0 (the latest on PyPI as of
+# this writing) imports `streamable_http_client` from mcp.client.streamable_http,
+# but that function was renamed to `streamablehttp_client` (no underscore)
+# in the mcp SDK long before 0.3.0 shipped — every streamable-HTTP call
+# fails with ImportError on 0.3.0. Verified working: 0.2.2 + mcp 1.12.4.
+# Re-test before bumping this if a newer adapters release ships.
+langchain-mcp-adapters==0.2.2
+anthropic>=0.40.0
+openai>=1.58.0
+redis==5.2.1
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+pydantic==2.10.3
+python-dotenv==1.0.1
+httpx==0.28.1
+pyyaml==6.0.2
+# Chat Orchestrator's internal HTTP surface (ai-architecture_v2.md §11.8,
+# worker/app/chat/server.py) — worker's first-ever HTTP port, same
+# starlette/uvicorn pair the mcp-* servers already use.
+starlette>=0.41.0
+uvicorn[standard]==0.32.1
+
+# Lát 2 — trích xuất OCR/LLM (docs/superpowers/specs/2026-07-19-rm-intake-extraction-design.md)
+pymupdf>=1.24.0
+pytesseract>=0.3.10
+python-docx>=1.1.0
+openpyxl>=3.1.0
+pillow>=10.0.0
+# run_extraction() gọi shared/storage.py::get_object_bytes() để tải document
+# từ MinIO — worker chưa từng import shared.storage trước lát 2 nên chưa có
+# minio trong requirements này (api/requirements.txt đã có sẵn, cùng version).
+minio==7.2.12
+# Langfuse Python SDK v3 — OpenTelemetry-based decorator API. Decorates
+# adapter.complete() and stream_complete() and the call_tool() helper in
+# worker/app/observability/tracing.py. v3 pinned <4 because the decorator
+# API (@observe, get_client) is stable there; v4 may change.
+langfuse>=3.0,<4.0

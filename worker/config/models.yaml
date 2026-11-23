@@ -1,0 +1,23 @@
+# Model tiering (ai-architecture.md §7) — a slot, not a hard-coded provider.
+# Swap provider/model here; agent code never imports a provider SDK directly,
+# it only calls worker/app/llm/adapter.py::complete(tier=...).
+tiers:
+  fast:
+    provider: openai   # FPT AI Factory (OpenAI-compatible), not OpenAI cloud — see OPENAI_BASE_URL in .env
+    model: Llama-3.3-70B-Instruct
+    max_tokens: 4096
+  reasoning:
+    provider: openai
+    model: Llama-3.3-70B-Instruct
+    max_tokens: 8192
+  # Lát 2 — trích xuất field từ tài liệu RM nộp (structured output qua
+  # complete_json()). Cùng OPENAI_BASE_URL/OPENAI_API_KEY (FPT AI Factory),
+  # model riêng vì đây là tác vụ trích xuất, không phải tạo văn bản dài.
+  extraction:
+    provider: openai
+    model: gemma-4-26B-A4B-it
+    max_tokens: 2048
+
+budget:
+  max_tokens_per_run: 400000
+  max_cost_per_run_usd: 2.00
