@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../../lib/i18n";
 
 interface StepNode {
   step: string;
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export default function CollaborationGraph({ caseId, conflicts }: Props) {
+  const { tv } = useI18n();
   const [states, setStates] = useState<Record<string, StepStatus>>({});
   const [seasonedRound, setSeasonedRound] = useState<number>(0);
   const [liveRound, setLiveRound] = useState<number>(0);
@@ -92,7 +94,7 @@ export default function CollaborationGraph({ caseId, conflicts }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-muted-foreground">Vòng challenge:</span>
+        <span className="text-muted-foreground">{tv("Vòng challenge:")}</span>
         <span className="rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
           {activeRound} / 2
         </span>
@@ -149,7 +151,7 @@ export default function CollaborationGraph({ caseId, conflicts }: Props) {
                 fontSize={11}
                 fill={s === "idle" ? "#334155" : "#ffffff"}
               >
-                {n.label}
+                {tv(n.label)}
               </text>
             </g>
           );
@@ -157,8 +159,8 @@ export default function CollaborationGraph({ caseId, conflicts }: Props) {
       </svg>
       <div className="text-sm text-muted-foreground">
         {Object.keys(states).length === 0
-          ? "Đang chờ sự kiện từ worker (chạy /cases/{id}/analyze để xem)…"
-          : "Đang theo dõi trực tiếp đồ thị phân luồng."}
+          ? tv("Đang chờ sự kiện từ worker (chạy /cases/{id}/analyze để xem)…")
+          : tv("Đang theo dõi trực tiếp đồ thị phân luồng.")}
       </div>
     </div>
   );

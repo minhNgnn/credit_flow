@@ -1,3 +1,25 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# RM Intake Backend — Implementation Plan (English)
+
+> Implementation plan. The English section below summarises goal, architecture and task breakdown; the full task-by-task steps, commands and code are in the original text that follows (Vietnamese comments, English code).
+
+**Goal:** let an RM submit a loan case through the API — create the case, upload documents to MinIO, view the document checklist, submit for appraisal.
+
+**Architecture:** a new router `api/app/routers/intake.py` (write side), separate from `cases.py` (read side). Four endpoints reuse existing infrastructure unchanged. **Stack:** FastAPI 0.115.6, SQLAlchemy 2.0.36, Postgres 16, MinIO, pytest + httpx (new).
+
+**Global constraints:** do not touch `web/` or `src/` (another team owns the frontend; this slice is pure backend); no migration; `doc_type` comes from the RM, not auto-classification (slice 2); **MinIO first, Postgres second** — never a `documents` row pointing to a nonexistent object.
+
+**⚠️ Hazard:** tests must run on a **separate database**.
+
+**Tasks:** 1 Build the test harness and register the router · 2 `POST /cases` · 3 `POST /cases/{case_id}/documents` · 4 `GET /cases/{case_id}/intake-status` · 5 `POST /cases/{case_id}/submit` · 6 Fault injection — a MinIO failure must not leave orphan rows · 7 Manual end-to-end verification · Hand-off to the frontend team.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # RM Intake Backend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

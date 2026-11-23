@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import { fetchMonitorLogs, type WorkerLogs } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 export default function WorkerLogsBox() {
+  const { tv, lang } = useI18n();
   const [data, setData] = useState<WorkerLogs | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -26,11 +28,11 @@ export default function WorkerLogsBox() {
 
   return (
     <div>
-      <h4 className="mb-2 text-xs font-medium text-muted-foreground">Nhật ký worker (200 dòng, poll 10s)</h4>
-      {err && <div className="text-sm text-red-700">Lỗi: <code>{err}</code></div>}
+      <h4 className="mb-2 text-xs font-medium text-muted-foreground">{tv("Nhật ký worker (200 dòng, poll 10s)")}</h4>
+      {err && <div className="text-sm text-red-700">{tv("Lỗi:")} <code>{err}</code></div>}
       {data?.error && !err && (
         <div className="text-sm text-amber-700">
-          Docker không khả dụng: <code>{data.error}</code> — chạy monitor trong host có Docker để xem log.
+          {tv("Docker không khả dụng")}: <code>{data.error}</code> — {tv("chạy monitor trong host có Docker để xem log.")}
         </div>
       )}
       {data?.lines && data.lines.length > 0 ? (
@@ -39,10 +41,10 @@ export default function WorkerLogsBox() {
         </pre>
       ) : null}
       {!data?.error && data?.lines && data.lines.length === 0 ? (
-        <div className="text-sm text-muted-foreground">Chưa có log worker.</div>
+        <div className="text-sm text-muted-foreground">{tv("Chưa có log worker.")}</div>
       ) : null}
       {data?.fetched_at ? (
-        <div className="mt-1 text-[10px] text-muted-foreground">Lúc {new Date(data.fetched_at).toLocaleString("vi-VN")} · container {data.container}</div>
+        <div className="mt-1 text-[10px] text-muted-foreground">{tv("Lúc")} {new Date(data.fetched_at).toLocaleString(lang === "en" ? "en-GB" : "vi-VN")} · container {data.container}</div>
       ) : null}
     </div>
   );

@@ -1,3 +1,24 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SHBExpert Flow — AI Architecture v1, Orchestrator-Workers (English)
+
+> **Historical reference.** [`ai-architecture_v2.md`](./ai-architecture_v2.md) is authoritative; where this file conflicts with v2, v2 wins. The Vietnamese section below is the full original.
+
+**Contents of v1** (section → what it covers):
+
+1. **Why Orchestrator-Workers** — a credit case needs several kinds of expertise (financial, policy, legal, collateral, credit history) that **can reach opposing conclusions**; the product's value is exposing that conflict. So: domain agents + shared state (not one big prompt: it cannot separate responsibilities or disagree with itself); a deterministic Orchestrator graph (not free group chat: it loops, creates *false consensus*, and cannot be audited); RAG + rule engine + deterministic functions (not an LLM that reads policy and decides: hard rules need versioned, testable results); human-in-the-loop (credit is a high-risk decision). Each agent owns exactly one clear kind of judgement. **The Orchestrator gives no credit opinion** — it plans, routes, detects conflicts and bounds loops, so the referee is never also a player.
+2. **Brain diagram** and 3. **Blackboard pattern** — agents communicate through structured state, not messages.
+4. **Orchestrator** — planning, dispatch, conflict detection, limits.
+5. **Worker catalogue** — each worker is specified by five properties: *input schema · tool allowlist · knowledge scope · output schema · stop condition*, plus guardrails. 5.1 is the shared **Document Processing Pipeline** (classify, extract, compare, checklist; fields with `confidence < 0.85` become `REVIEW_REQUIRED`; OCR failure → `FAILED`, retry once, allow manual entry), followed by the Financial, Policy, Collateral and Customer-360 agents.
+6. **Tool layer** (MCP). 7. **Model tiering** — `FAST` (classification, extraction, checklist matching; cheap, many files per case) and `REASONING` (expert analysis, conflict detection, decision synthesis, memo draft), configured through a provider adapter, not hard-coded.
+8. **Domain RAG.** 9. **Challenge mechanism** (max 2 rounds). 10. **Decision logic** — **hard gates run BEFORE the scorecard**; gates, weights and thresholds are mock ground truth, to be replaced by approved policy-as-code. 11. **Guardrails and failure modes.** 12. **Evaluation.** 13. Read next.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # SHBExpert Flow — Kiến trúc AI (Orchestrator-Workers)
 
 > **Bộ tài liệu kiến trúc** — 3 file:

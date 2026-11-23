@@ -1,3 +1,21 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# AI Monitor Dashboard — Implementation Plan (English)
+
+> Implementation plan. The English section below summarises goal, architecture and task breakdown; the full task-by-task steps, commands and code are in the original text that follows (Vietnamese comments, English code).
+
+**Goal:** ship a single-page `/monitor` route in `web` plus two FastAPI endpoints that aggregate Postgres + Langfuse to show SRE latency, agent-council quality, LLM call distribution, and a live event stream + worker logs — the bank-grade "AI Monitor" overview.
+
+**Architecture:** FastAPI `/monitor/overview` (one request → several SQL GROUP BYs + Langfuse REST calls) and `/monitor/logs` (defensively wrapped `docker logs` subprocess) feed a Next.js `app/monitor/page.tsx` rendering a 2×2 grid of recharts/SVG panels. **Stack:** Python 3.11 + FastAPI + SQLAlchemy 2.0; Next.js 15 + React 19; recharts 2.15; Tailwind v4 + SHB tokens from `web/app/globals.css`. Spec: `docs/superpowers/specs/2026-07-19-ai-monitor-dashboard-design.md`.
+
+**Tasks:** 1 Backend router (`/monitor/overview`, `/monitor/logs`) · 2 Frontend types + fetcher (`web/app/lib/monitor.ts`) · 3 Reusable `Panel` + KPI strip + `/monitor` scaffold · 4 Panel 1 — SRE: case-state donut + latency tree · 5 Panel 2 — agent-council quality (stance stacked bar, severity heatmap, conflict donut) · 6 Panel 3 — LLM & tools (calls per case, decision donut, event distribution bar) · 7 Panel 4 — logs (live EventStream + WorkerLogsBox) · 8 Production smoke + runbook update.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # AI Monitor Dashboard Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -1,3 +1,73 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Report: Measuring multi-agent vs single-agent (ablation Variant A) — English
+
+> This document describes **how the measurement was designed and run**, not only the results. Numbers are in `eval/compare/summary.md`; how to re-run is in `eval/README.md`. All eval data is **synthetic**, declared in each case (`synthetic_flag`, `synthetic_data_notice`).
+
+## 1. Why measure this
+
+`ai-architecture_v2.md` §1.2 lists a non-goal: *"Do not claim multi-agent beats single-agent without an ablation and measurements."* §16.3 specifies an A–E ablation ladder where **Variant A = one Credit Agent on the same data**; before this work, none of it was implemented. This report implements the minimal core: **Variant A (single-agent) vs the current multi-agent system.**
+
+Falsifiable research question: *does splitting into specialist agents + orchestrator + deterministic tools improve decision correctness, risk coverage, numeric accuracy, stability and conflict detection enough to pay for the extra latency and token cost?* Go/no-go criterion (from §16.3): keep the split architecture only if it improves quality after accounting for latency/cost.
+
+## 2. Comparison design — hold everything constant except architecture
+
+Same model (Llama-3.3-70B-Instruct on FPT AI Factory), same tier/parameters, same LLM call path (`worker/app/llm/adapter.py::complete()`), same 24 case.json files, same scorer (`eval/common/scoring.py`), same golden file (`eval/golden_cases.jsonl`). Only the architecture differs: single-agent = 1 prompt, 0 tools, no second opinion, formulas stated in the prompt; multi-agent = Orchestrator → 4 parallel agents → Conflict Detector → Decision Synthesis, formulas in deterministic tools. **24 cases × 3 repetitions × 2 variants = 144 real runs; no number is filled in by hand.**
+
+## 3–8. Method (summary)
+
+Archetype-based cases (8 archetypes × 3 variants, see [`../eval/README.md`](../eval/README.md)); synthetic data generated deterministically; ground truth derived from business logic, independent of current system behaviour; metrics split into **quality** (decision_correct, risk_recall, numeric_accuracy, false_positive, consistency pass^k, conflict_correct) and **cost** (latency, LLM calls, tokens, audit depth); a fairness analysis (§7); instrumentation via a `contextvars` metrics collector and the run procedure (§8). Full detail in the Vietnamese section.
+
+## 9. Results
+
+After adding hard gates G7–G9 (the eval itself found the hole, then verified the fix):
+
+| Quality metric | single_agent | multi_agent (before G7–G9) | multi_agent (after) |
+|---|---|---|---|
+| Correct decision | 0.125 | 0.500 | **0.875** |
+| Risk recall | 0.651 | 0.984 | **1.000** |
+| **Numeric accuracy** | 0.117 | 0.784 | **0.801** |
+| Consistency pass³ | 0.708 | 0.958 | **1.000** |
+| False-alarm rate (lower is better) | 0.125 | 0 | **0** |
+| Conflict detection | 0.5 | 1.0 | **1.0** |
+
+| Cost metric | single_agent | multi_agent |
+|---|---|---|
+| Run time (ms) | **10,930** | 20,931 |
+| LLM calls | **1** | 14.5 |
+| Total tokens | **3,049** | 3,981 |
+| Audit depth (run 1) | 5.3 | **68.0** ¹ |
+
+¹ `events` is append-only so it cannot be cleaned between runs (by design); this number accumulates across runs of the same case — read it directionally ("multi-agent leaves far deeper audit trails"), not as an absolute single-run value.
+
+**Verdict by the §16.3 go/no-go criterion:** the split architecture clearly improves every quality dimension, at ~1.9× latency and ~14.5× LLM calls (but only ~1.3× tokens, because each call is small and focused). For credit appraisal — where one wrong decision costs far more than 10 seconds of waiting — the trade-off is reasonable.
+
+### 9.1 A real bug the eval found, and the verified fix
+
+**Finding (first run):** multi-agent got 4 of 8 archetypes wrong — `BAD_CREDIT_HISTORY`, `VALUATION_STALE`, `WEAK_DSCR`, `HIGH_LEVERAGE`. Common cause: **the scorecard had no hard gate** for these signals, and the all-SUPPORT baseline is already 88/100, so one weak dimension could not drag it below the APPROVE threshold (80). Worst: customers with CIC group 3–4 bad debt still got `APPROVE` — and single-agent did better on that archetype (0.556 vs 0).
+
+**Fix:** hard gates `G7` (debt group ≥3 → REJECT), `G8` (DSCR < 1.3 → REFER), `G9` (expired valuation → NEED_INFO) in `worker/app/graph/decision.py`, keyed on **deterministic tool metrics** rather than soft stances.
+
+**Verification** (full 24 × 3 re-run): BAD_CREDIT_HISTORY 0.00 → 1.00 (`REJECT`), WEAK_DSCR 0.00 → 1.00 (`REFER`), VALUATION_STALE 0.00 → 1.00 (`NEED_INFO`), HIGH_LEVERAGE 0.00 → 0.00 (`APPROVE`), 4 already-correct archetypes unchanged; **overall 0.500 → 0.875**. `HIGH_LEVERAGE` is **deliberately not fixed**: high leverage is a softer signal (DSCR still 1.45, collateral still ample), so making it a hard gate is a risk-appetite decision for the business owner, not a technical one — recorded as an open item. Had this eval been built to "prove multi-agent wins", neither the finding nor the fix would exist.
+
+## 10. Known sources of error
+
+1. **409 errors on repetition:** in the verification run **72/72** runs reported errors (62× `update_case_status 409 Conflict` + 10 transient MCP timeouts) because cleaning data deleted `findings/decisions` but left the case in `READY_FOR_REVIEW`. The transition node runs **after** the DecisionPackage is written, so decisions/findings remain valid (checked: 72/72 runs have a full decision, recall 1.0, numeric 0.801). Fully clean runs need a separate seeded case_id per repetition.
+2. **Findings accumulate across repetitions** (re-running the same `case_id` mints new `finding_key`s; counts inflate to 38 vs 15.9) — handled by using **only run 1** for count metrics; quality metrics are unaffected.
+3. **Only one model tested** — a stronger model with better arithmetic would narrow the `numeric_accuracy` gap.
+4. **`evidence_coverage` is presence-only**, not validity.
+5. **Cost is not split per agent** — only per case.
+6. **24 cases is a small sample**; with 3 variants per archetype, a single-archetype difference is not statistically strong.
+
+## 11. Future work
+Add hard gates for the §9.1 holes and re-run this same eval; implement ablation steps B–E of §16.3 (parallel workcell → +Citation Validator → +Conflict Checker → +Capability Router) to attribute value per component; validate that evidence is real; grow the sample and add adversarial archetypes (prompt injection in documents, tool timeouts) from the 15 scenarios in §16.1.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Báo cáo: Đo lường multi-agent so với single-agent (ablation Variant A)
 
 > Tài liệu này mô tả **cách thiết kế và thực hiện phép đo**, không chỉ kết quả.

@@ -1,3 +1,23 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# CI/CD GitHub Actions — Implementation Plan (English)
+
+> Implementation plan. The English section below summarises goal, architecture and task breakdown; the full task-by-task steps, commands and code are in the original text that follows (Vietnamese comments, English code).
+
+**Goal:** build 8 Docker images on GitHub Actions, push them to ECR tagged with the git SHA, and deploy to the VM automatically through S3 + SSM when merging to `main`.
+
+**Architecture:** artifacts via ECR, config via S3 (two channels). PRs only build to verify and never touch AWS; only `main` may push to ECR and deploy, enforced by an OIDC trust policy. The VM builds nothing — it only pulls. **Stack:** GitHub Actions, AWS ECR, AWS SSM (`AWS-RunShellScript`), S3, Terraform (AWS provider `~> 5.0`, TF `>= 1.5`), Docker Compose v2, Ruff, `docker/build-push-action` with `type=gha` cache. **Spec:** `docs/superpowers/specs/2026-07-18-cicd-github-actions-design.md`.
+
+**Global constraints:** `project` = `shbexpert`, `region` = `ap-southeast-1`; repo slug `TruongSon421/dashmint_ai`.
+
+**Tasks:** 1 Get the S3 + SSM channel working by hand · 2 Ruff config + CI workflow · 3 Terraform: ECR repositories + pull permission for the VM · 4 Terraform: instance tag + GitHub OIDC role · 5 `docker-compose.yml`: add `image:` · 6 `deploy.sh`: pull instead of build · 7 Deploy workflow · Self-review.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # CI/CD GitHub Actions Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

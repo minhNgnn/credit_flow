@@ -1,3 +1,23 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# OCR/LLM Extraction for RM Cases (slice 2) — Implementation Plan (English)
+
+> Implementation plan. The English section below summarises goal, architecture and task breakdown; the full task-by-task steps, commands and code are in the original text that follows (Vietnamese comments, English code).
+
+**Goal:** automatically extract structured fields from documents the RM submits (PDF/PNG/JPEG/DOCX/XLSX) and write them to `extracted_fields`, so the appraisal agents (`financial.py` first, the others later) read real data instead of seeded data.
+
+**Architecture:** each successful `POST /cases/{id}/documents` enqueues a job on Redis (`EXTRACTION_QUEUE`); the worker has a dedicated consumer (`_consume_extraction_jobs`, the same mould as `_consume_slink_jobs`) calling `run_extraction(document_id)`. **Stack:** Python 3.11, FastAPI, SQLAlchemy, Redis, PyMuPDF (`fitz`), `pytesseract` + system Tesseract OCR, `python-docx`, `openpyxl`, Pydantic, OpenAI SDK (pointing at FPT AI Factory), pytest + pytest-asyncio.
+
+**Global constraints:** red lane (LMS) only — do not touch SLINK/the green lane; no Alembic migration (`extracted_fields` already has the columns, `bbox`/`page` nullable); the LLM only **selects a `line_id`** from the parsed anchor list and never generates bbox/coordinates; `LLM_MOCK=true` must run the whole pipeline without network or API key.
+
+**Tasks:** 1 Dependencies (Python packages + system Tesseract) · 2 `EXTRACTION_QUEUE` + `DOC_TYPE_FIELD_CATALOG` · 3 `complete_json()` — LLM structured output · 4 `shared/extraction/schema.py` · 5 `labels.py` — deterministic label matching · 6 `spreadsheet.py` — XLSX parser · 7 `office.py` — DOCX parser · 8 `ocr.py` — Tesseract OCR · 9 `pdf.py` — text layer first, OCR fallback, coordinate conversion · 10 `worker/app/agents/extraction.py` — orchestrator · 11 `worker/app/main.py` — extraction consumer · 12 `api/app/routers/intake.py` — allow more MIME types + enqueue · final end-to-end verification (spec §10).
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Trích xuất OCR/LLM cho hồ sơ RM (lát 2) — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

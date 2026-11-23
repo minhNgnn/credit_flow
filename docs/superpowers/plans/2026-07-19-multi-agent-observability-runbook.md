@@ -1,3 +1,23 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Multi-Agent Observability — Smoke Runbook (English)
+
+End-to-end smoke-test runbook for branch `feat/multi-agent-observability` (spec: `docs/superpowers/specs/2026-07-19-multi-agent-observability-design.md`, plan: `docs/superpowers/plans/2026-07-19-multi-agent-observability.md`). Run every command from the worktree root.
+
+**Steps:** 0 prerequisites (Docker + Compose v5+, `.env` copied from `.env.example`) · 1 lint compose · 2 bring up the stack · 3 Langfuse health · 4 migrate + seed · 5 trigger analyze for case C06 · 6 watch SSE events (live collaboration) · 7 dashboard Status tab · 8 Collaboration tab · 9 confirm the Langfuse trace is registered · 10 Traces tab (Gantt) · 11 Decisions tab · 12 tear down and clean up.
+
+**Smoke verification checklist (all 11 must pass):** compose lint `compose-ok` · stack up, every service healthy ≤ 60s · `/api/public/health` 200 · `bootstrap_deploy.sh` seeds C06 · `POST /cases/C06/analyze` 202 · Redis `SUBSCRIBE progress:C06` shows step_started/completed · `/observability` Status tab shows the queue · `/observability/collaboration/C06` graph animates over SSE · Langfuse UI/REST shows the full trace + spans · `/observability/traces/C06` Gantt renders · `/observability/decisions/C06` shows DecisionCard + FindingDrawer.
+
+**Automated coverage (no docker needed):** `pytest tests/observability/ -v` → 16 passed (3 trace_case_run + 3 call_tool + 2 observe_adapter + 3 observability_router + 5 agents_use_call_tool); `cd web && npm run build` → green with every `/observability/*` route compiled.
+
+**Known caveats:** pre-existing TypeScript errors in `web/app/cases/[caseId]/page.tsx` (`"running"` vs `StepStatus` `"in_progress"`) shipped on branch `origin/frontend`; to stay in scope the build ignores them (`typescript.ignoreBuildErrors=true`). Langfuse's host port is **3002**, not 3001, because `web` already uses 3001; inside the network `LANGFUSE_HOST=http://langfuse:3000` is used by the worker and the Next.js route handlers.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Multi-Agent Observability — Smoke Runbook
 
 > Branch: `feat/multi-agent-observability` · worktree:

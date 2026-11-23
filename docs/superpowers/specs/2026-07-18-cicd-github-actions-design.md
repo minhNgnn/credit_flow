@@ -1,3 +1,42 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# CI/CD with GitHub Actions — Design (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-18 · **Status:** decided, awaiting implementation · **Scope:** CI/CD pipeline only (project A); test/eval infrastructure (B) and Langfuse observability (C) are separate specs.
+
+## 1. Context
+Deployment is manual via **rsync** straight into `/opt/shbexpert` on the VM (`m7i.xlarge`, 4 vCPU / 16 GB / 40 GB disk), then `deploy/deploy.sh` → `docker compose up -d --build`, so the VM builds all 8 application services itself. Commit `56e67f0` already built the **infrastructure** for another channel (S3 bucket, SSM IAM role, instance profile) but no script uses it, so the **S3 + SSM channel has never run**. Four problems: slow deploys with long downtime (building on a production VM); no rollback (no versioned artifacts); deploys depend on one person's laptop (not reproducible, no logs); no quality gate (no tests, no Python linter config, no `.github/`).
+
+## 2. Decisions
+| Question | Choice |
+|---|---|
+| Scope | CI + automatic CD |
+| Where images are built | GitHub Actions → push to ECR |
+| Deploy trigger | Merge to `main` → auto deploy, no approval |
+| Quality gate | Ruff + tsc/next lint + docker build + pytest scaffold |
+| Config management | Runtime discovery; only 2 repo variables stored |
+| AI eval / Langfuse | Deferred to specs B and C |
+
+## 3. Architecture
+**Artifacts go through ECR, config goes through S3 — two separate channels.** PRs run `ci.yml` (ruff, next lint + tsc, docker build without push, pytest with `LLM_MOCK=true`) and use **no AWS credentials**. A push to `main` runs `deploy.yml`: a matrix `build-push` of 8 services to ECR tagged with the git SHA, then `deploy` — tarball of config → S3 → SSM → `deploy.sh` (pull · up -d · alembic · seed). ECR push and deploy rights are restricted by an OIDC condition on `ref:refs/heads/main`, so fork PRs cannot obtain credentials.
+
+## 4–7. Changes
+`docker-compose.yml` gains `image:` references; Terraform adds ECR repositories, VM pull permission, an instance tag and a GitHub OIDC role; `deploy.sh` pulls instead of building; configuration uses runtime discovery.
+
+## 8. Tagging and rollback
+Image tag = **git SHA, immutable**; never `latest` in production (it makes the running version unknowable and rollback impossible). **Rollback** = `workflow_dispatch` with `image_tag` = an older SHA — just pull the old image, no rebuild. A lifecycle policy keeps the 10 most recent images, so rollback reaches about 10 deploys back; further needs a rebuild from the old commit.
+
+## 9–12. Workflows, extension point for B, out of scope, manual follow-ups
+Detailed workflow definitions, the hook left for the test/eval project, exclusions, and the manual steps required after implementing (repo variables, OIDC trust) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # CI/CD GitHub Actions — Design
 
 **Ngày:** 2026-07-18

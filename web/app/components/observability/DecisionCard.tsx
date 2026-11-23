@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaseDetail, Conflict, Decision as DecisionType } from "../../lib/types";
+import { useI18n } from "../../lib/i18n";
 
 interface Props {
   decision: DecisionType | null;
@@ -31,10 +32,11 @@ function Strings({ title, items }: { title: string; items: string[] }) {
 }
 
 export default function DecisionCard({ decision, conflicts }: Props) {
+  const { tv } = useI18n();
   if (!decision) {
     return (
       <div className="rounded border border-border p-4 text-sm text-muted-foreground">
-        Chưa có Quyết định tổng hợp — hồ sơ vẫn đang phân tích hoặc chưa synthesize.
+        {tv("Chưa có Quyết định tổng hợp — hồ sơ vẫn đang phân tích hoặc chưa synthesize.")}
       </div>
     );
   }
@@ -42,26 +44,26 @@ export default function DecisionCard({ decision, conflicts }: Props) {
   return (
     <div className="space-y-3 rounded border border-border p-4">
       <div>
-        <div className="text-sm text-muted-foreground">Khuyến nghị</div>
+        <div className="text-sm text-muted-foreground">{tv("Khuyến nghị")}</div>
         <div className="text-base font-semibold">
           {decision.recommendation}
           {hardFail && (
             <span className="ml-2 rounded bg-destructive px-2 py-0.5 text-xs text-destructive-foreground">
-              cổ cứng fail
+              {tv("cổ cứng fail")}
             </span>
           )}
         </div>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-sm">
-        <dt className="text-muted-foreground">Hạn mức yêu cầu</dt>
+        <dt className="text-muted-foreground">{tv("Hạn mức yêu cầu")}</dt>
         <dd className="tabular-nums">{vnd(decision.requested_amount_vnd)}</dd>
-        <dt className="text-muted-foreground">Hạn mức đề xuất</dt>
+        <dt className="text-muted-foreground">{tv("Hạn mức đề xuất")}</dt>
         <dd className="tabular-nums">{vnd(decision.recommended_amount_vnd)}</dd>
-        <dt className="text-muted-foreground">Thời hạn đề xuất</dt>
-        <dd className="tabular-nums">{decision.recommended_tenor_months ?? "—"} tháng</dd>
+        <dt className="text-muted-foreground">{tv("Thời hạn đề xuất")}</dt>
+        <dd className="tabular-nums">{decision.recommended_tenor_months ?? "—"} {tv("tháng")}</dd>
       </dl>
       <div>
-        <div className="text-sm text-muted-foreground">Cổng cứng</div>
+        <div className="text-sm text-muted-foreground">{tv("Cổng cứng")}</div>
         <ul className="text-sm">
           {decision.hard_gates.map((g) => (
             <li key={g.gate_id} className="flex items-center gap-2">
@@ -83,7 +85,7 @@ export default function DecisionCard({ decision, conflicts }: Props) {
       </div>
       {decision.scores.length > 0 && (
         <div>
-          <div className="text-sm text-muted-foreground">Điểm số</div>
+          <div className="text-sm text-muted-foreground">{tv("Điểm số")}</div>
           <ul className="text-sm">
             {decision.scores.map((s) => (
               <li key={s.dimension} className="flex justify-between">
@@ -96,20 +98,20 @@ export default function DecisionCard({ decision, conflicts }: Props) {
           </ul>
         </div>
       )}
-      <Strings title="Điểm mạnh" items={decision.strengths} />
-      <Strings title="Rủi ro" items={decision.risks} />
-      <Strings title="Điều kiện tiên quyết" items={decision.conditions_precedent} />
-      <Strings title="Bất đồng còn lại" items={decision.dissent} />
+      <Strings title={tv("Điểm mạnh")} items={decision.strengths} />
+      <Strings title={tv("Rủi ro")} items={decision.risks} />
+      <Strings title={tv("Điều kiện tiên quyết")} items={decision.conditions_precedent} />
+      <Strings title={tv("Bất đồng còn lại")} items={decision.dissent} />
       <div className="mt-2 text-xs text-muted-foreground">
-        Phiên bản chính sách: {decision.policy_version ?? "—"} · Ma trận quyết định:{" "}
+        {tv("Phiên bản chính sách")}: {decision.policy_version ?? "—"} · {tv("Ma trận quyết định")}:{" "}
         {decision.decision_matrix_version ?? "—"}
       </div>
       {conflicts.length > 0 && (
         <div className="text-xs">
-          <span className="text-muted-foreground">Mâu thuẫn: </span>
+          <span className="text-muted-foreground">{tv("Mâu thuẫn:")} </span>
           {conflicts.map((c) => (
             <span key={c.conflict_id} className="mr-2 inline-block">
-              {c.issue_key} (vòng {c.round}, {c.status})
+              {c.issue_key} ({tv("vòng")} {c.round}, {c.status})
             </span>
           ))}
         </div>

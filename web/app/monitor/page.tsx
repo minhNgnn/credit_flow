@@ -17,6 +17,7 @@ import WorkerLogsBox from "../components/monitor/WorkerLogsBox";
 import { fetchMonitorOverview, type MonitorKPI, type MonitorOverview } from "../lib/monitor";
 import { fetchObservabilityCases } from "../lib/observability";
 import type { CaseSummary } from "../lib/types";
+import { useI18n } from "../lib/i18n";
 
 const emptyKpi: MonitorKPI = {
   total_cases: 0,
@@ -32,6 +33,7 @@ const emptyKpi: MonitorKPI = {
 };
 
 export default function MonitorPage() {
+  const { tv } = useI18n();
   const [overview, setOverview] = useState<MonitorOverview | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [caseIds, setCaseIds] = useState<string[]>([]);
@@ -63,43 +65,43 @@ export default function MonitorPage() {
       <main className="space-y-4 px-6 py-4">
         {err ? (
           <div className="rounded-lg border border-border bg-red-50 px-4 py-3 text-sm text-red-900">
-            Không thể tải dữ liệu: <code>{err}</code>
+            {tv("Không thể tải dữ liệu")}: <code>{err}</code>
           </div>
         ) : null}
-        {!overview && !err ? <div className="text-sm text-muted-foreground">Đang tải…</div> : null}
+        {!overview && !err ? <div className="text-sm text-muted-foreground">{tv("Đang tải…")}</div> : null}
         {overview ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title="SRE · Tình trạng & Độ trễ">
+            <Panel title={tv("SRE · Tình trạng & Độ trễ")}>
               <div className="space-y-3">
                 <CaseStateDonut cases_by_state={overview.kpi.cases_by_state} />
-                <h4 className="text-xs font-medium text-muted-foreground">Độ trễ theo node / tool</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Độ trễ theo node / tool")}</h4>
                 <LatencyTree latency={overview.latency} />
               </div>
             </Panel>
-            <Panel title="Hội đồng agent · Chất lượng">
+            <Panel title={tv("Hội đồng agent · Chất lượng")}>
               <div className="space-y-3">
-                <h4 className="text-xs font-medium text-muted-foreground">Thái độ theo agent (SUPPORT / CAUTION / OPPOSE / NEED_DATA)</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Thái độ theo agent (SUPPORT / CAUTION / OPPOSE / NEED_DATA)")}</h4>
                 <StanceStackedBar findings_distribution={overview.findings_distribution} />
-                <h4 className="text-xs font-medium text-muted-foreground">Mức độ (severity × agent)</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Mức độ (severity × agent)")}</h4>
                 <SeverityHeatmap severity_distribution={overview.severity_distribution} />
-                <h4 className="text-xs font-medium text-muted-foreground">Mâu thuẫn</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Mâu thuẫn")}</h4>
                 <ConflictDonut
                   conflict_distribution={overview.conflict_distribution}
                   conflict_round_distribution={overview.conflict_round_distribution}
                 />
               </div>
             </Panel>
-            <Panel title="LLM & Tools · Số lần gọi">
+            <Panel title={tv("LLM & Tools · Số lần gọi")}>
               <div className="space-y-3">
-                <h4 className="text-xs font-medium text-muted-foreground">Số lần gọi LLM theo hồ sơ</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Số lần gọi LLM theo hồ sơ")}</h4>
                 <LLMCallsBar llm_calls_per_case={overview.llm_calls_per_case} total_llm_calls={overview.kpi.total_llm_calls} />
-                <h4 className="text-xs font-medium text-muted-foreground">Quyết định tổng hợp</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Quyết định tổng hợp")}</h4>
                 <DecisionDonut decision_distribution={overview.decision_distribution} />
-                <h4 className="text-xs font-medium text-muted-foreground">Sự kiện hệ thống (FINDING_WRITTEN, CONFLICT_*, ...)</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">{tv("Sự kiện hệ thống (FINDING_WRITTEN, CONFLICT_*, ...)")}</h4>
                 <EventDistributionBar event_distribution={overview.event_distribution} />
               </div>
             </Panel>
-            <Panel title="Hoạt động & Nhật ký worker">
+            <Panel title={tv("Hoạt động & Nhật ký worker")}>
               <div className="space-y-3">
                 <EventStream caseIds={caseIds} />
                 <WorkerLogsBox />

@@ -13,6 +13,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Separator } from "../../components/ui/separator";
 import { cn } from "../../lib/utils";
+import { useI18n } from "../../lib/i18n";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -65,8 +66,18 @@ function MessageBubble({ role, content, timestamp, streaming }: {
               : "rounded-tl-sm border border-[var(--color-gray-200)] bg-white text-[var(--color-gray-900)]"
           )}
         >
-          {isUser ? content : <RichText text={content} />}
-          {streaming && <span className="ml-0.5 animate-pulse">▍</span>}
+          {isUser ? (
+            content
+          ) : streaming && content === "" ? (
+            <span className="flex items-center gap-1 py-1 text-[var(--color-gray-400)]">
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current" />
+            </span>
+          ) : (
+            <RichText text={content} />
+          )}
+          {streaming && content !== "" && <span className="ml-0.5 animate-pulse">▍</span>}
         </div>
         {isUser && timestamp && (
           <p className="text-[11px] text-[var(--color-gray-400)]">
@@ -90,9 +101,13 @@ const SUGGESTIONS = [
 // ─── Agent Chat Panel ─────────────────────────────────────────────────────────
 
 function AgentChatPanel({ caseId }: { caseId: string }) {
+  const { tv } = useI18n();
   const [messages, setMessages] = useState<ChatMessageDto[] | null>(null);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
+  // Optimistic copy of the CO's message — shown immediately instead of
+  // waiting for the refetch after the assistant finishes streaming.
+  const [pendingUser, setPendingUser] = useState<{ content: string; at: string } | null>(null);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -102,13 +117,14 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, streaming]);
+  }, [messages, streaming, pendingUser]);
 
   const send = async (content: string) => {
     const text = content.trim();
     if (!text || sending) return;
     setSending(true);
     setDraft("");
+    setPendingUser({ content: text, at: new Date().toISOString() });
     setStreaming("");
     try {
       await sendChatMessage(caseId, text, (chunk) => setStreaming((p) => (p ?? "") + chunk));
@@ -116,12 +132,13 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
       const refreshed = await fetchChatMessages(caseId).catch(() => null);
       if (refreshed) setMessages(refreshed);
       setStreaming(null);
+      setPendingUser(null);
       setSending(false);
     }
   };
 
   const shown = (messages ?? []).filter((m) => m.role !== "SYSTEM");
-  const isEmpty = messages !== null && shown.length === 0 && streaming === null;
+  const isEmpty = messages !== null && shown.length === 0 && streaming === null && pendingUser === null;
 
   return (
     <Card className="py-0 gap-0 flex flex-col overflow-hidden" style={{ height: 640 }}>
@@ -132,7 +149,7 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
           <span className="text-xs text-[var(--color-gray-400)]">ⓘ</span>
         </div>
         <button className="flex items-center gap-1 text-xs text-[var(--color-gray-500)] hover:text-[var(--color-navy-700)] transition-colors">
-          Lịch sử hội thoại <RefreshCw className="size-3" />
+          {tv("Lịch sử hội thoại")} <RefreshCw className="size-3" />
         </button>
       </div>
 
@@ -148,12 +165,12 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages === null ? (
-          <p className="text-sm text-center text-[var(--color-gray-400)] mt-8">Đang tải hội thoại…</p>
+          <p className="text-sm text-center text-[var(--color-gray-400)] mt-8">{tv("Đang tải hội thoại…")}</p>
         ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <Sparkles className="size-6 text-[var(--color-orange-400)]" />
             <p className="text-sm text-[var(--color-gray-500)] max-w-xs">
-              Nhập câu hỏi cho Credit AI Agent để bắt đầu phân tích.
+              {tv("Nhập câu hỏi cho Credit AI Agent để bắt đầu phân tích.")}
             </p>
           </div>
         ) : (
@@ -166,6 +183,9 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
                 timestamp={m.created_at}
               />
             ))}
+            {pendingUser !== null && (
+              <MessageBubble role="USER" content={pendingUser.content} timestamp={pendingUser.at} />
+            )}
             {streaming !== null && (
               <MessageBubble role="ASSISTANT" content={streaming} streaming />
             )}
@@ -182,7 +202,7 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
               onClick={() => send(s)}
               className="px-2.5 py-1 rounded-full border border-[var(--color-gray-200)] text-xs text-[var(--color-gray-600)] hover:border-[var(--color-orange-400)] hover:text-[var(--color-orange-600)] transition-colors"
             >
-              {s}
+              {tv(s)}
             </button>
           ))}
         </div>
@@ -195,7 +215,7 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
         </button>
         <input
           className="flex-1 text-sm bg-transparent outline-none text-[var(--color-gray-900)] placeholder:text-[var(--color-gray-400)]"
-          placeholder={`Nhập câu hỏi cho ${AGENT.label}…`}
+          placeholder={tv("Nhập câu hỏi cho {name}…", { name: AGENT.label })}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(draft); } }}
@@ -216,6 +236,7 @@ function AgentChatPanel({ caseId }: { caseId: string }) {
 // ─── Decision Summary Card ────────────────────────────────────────────────────
 
 function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
+  const { tv } = useI18n();
   const d = caseDetail.decision;
 
   const STATE_LABEL: Record<string, { label: string; color: string; bg: string }> = {
@@ -254,7 +275,7 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
   return (
     <Card className="py-0 gap-0 overflow-hidden">
       <CardHeader className="pt-4 pb-3 px-5">
-        <CardTitle className="text-sm">Tóm tắt quyết định</CardTitle>
+        <CardTitle className="text-sm">{tv("Tóm tắt quyết định")}</CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="p-0">
@@ -262,33 +283,33 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
           {/* Col 1: Status */}
           <div className="p-4 flex flex-col gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-1.5">Trạng thái hồ sơ</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-1.5">{tv("Trạng thái hồ sơ")}</p>
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold"
                 style={{ color: stateInfo.color, background: stateInfo.bg }}
               >
-                {stateInfo.label}
+                {tv(stateInfo.label)}
               </span>
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-0.5">SLA</p>
-              <p className="text-sm font-bold text-[var(--color-danger-600)]">-1 ngày</p>
+              <p className="text-sm font-bold text-[var(--color-danger-600)]">{tv("-1 ngày")}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-0.5">Hạn mức đề nghị</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-0.5">{tv("Hạn mức đề nghị")}</p>
               <p className="text-xs font-semibold text-[var(--color-gray-900)] tabular-nums">{fmtVnd(amountReq)}</p>
             </div>
             {amountRec && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-0.5">Hạn mức đánh giá</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-0.5">{tv("Hạn mức đánh giá")}</p>
                 <p className="text-xs font-semibold text-[var(--color-gray-900)] tabular-nums">{fmtVnd(amountRec)}</p>
               </div>
             )}
             {d && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-1">Xếp hạng tín dụng nội bộ</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-1">{tv("Xếp hạng tín dụng nội bộ")}</p>
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--color-navy-50)] text-[var(--color-navy-700)] text-xs font-bold">
-                  BB <span className="font-normal text-[var(--color-gray-500)]">Trung bình khá</span>
+                  BB <span className="font-normal text-[var(--color-gray-500)]">{tv("Trung bình khá")}</span>
                 </span>
               </div>
             )}
@@ -296,7 +317,7 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
 
           {/* Col 2: Covenants */}
           <div className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-2.5">Checklist covenant chính</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-2.5">{tv("Checklist covenant chính")}</p>
             <div className="flex flex-col gap-2">
               {COVENANTS.map((cv) => (
                 <div key={cv.label} className="flex items-center justify-between gap-2">
@@ -305,9 +326,9 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
                       ? <CheckCircle2 className="size-3.5 shrink-0 text-[var(--color-success-600)]" />
                       : <XCircle className="size-3.5 shrink-0 text-[var(--color-danger-600)]" />
                     }
-                    <span className="text-xs text-[var(--color-gray-700)] truncate">{cv.label}</span>
+                    <span className="text-xs text-[var(--color-gray-700)] truncate">{tv(cv.label)}</span>
                   </div>
-                  <span className="text-xs font-semibold text-[var(--color-gray-900)] shrink-0">{cv.value}</span>
+                  <span className="text-xs font-semibold text-[var(--color-gray-900)] shrink-0">{tv(cv.value)}</span>
                 </div>
               ))}
             </div>
@@ -315,7 +336,7 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
 
           {/* Col 3: Approval conditions */}
           <div className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-2.5">Điều kiện phê duyệt</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-2.5">{tv("Điều kiện phê duyệt")}</p>
             <div className="flex flex-col gap-2">
               {conditions.map((c, i) => (
                 <div key={i} className="flex items-center justify-between gap-2">
@@ -324,19 +345,19 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
                       ? <CheckCircle2 className="size-3.5 shrink-0 text-[var(--color-success-600)]" />
                       : <XCircle className="size-3.5 shrink-0 text-[var(--color-danger-600)]" />
                     }
-                    <span className="text-xs text-[var(--color-gray-700)] truncate">{c}</span>
+                    <span className="text-xs text-[var(--color-gray-700)] truncate">{tv(c)}</span>
                   </div>
                   <span
                     className="text-xs font-semibold shrink-0"
                     style={{ color: conditionPass[i] !== false ? "var(--color-success-600)" : "var(--color-danger-600)" }}
                   >
-                    {conditionPass[i] !== false ? "Đạt" : "Chưa"}
+                    {conditionPass[i] !== false ? tv("Đạt") : tv("Chưa")}
                   </span>
                 </div>
               ))}
             </div>
             <button className="group mt-3 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-orange-600)]">
-              Xem chi tiết điều kiện
+              {tv("Xem chi tiết điều kiện")}
               <ChevronRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5" />
             </button>
           </div>
@@ -351,10 +372,11 @@ function DecisionSummaryCard({ caseDetail }: { caseDetail: CaseDetail }) {
 const ROUTING_STEPS = ["CBTD (Bạn)", "GDPD", "HĐTD", "HĐTV"];
 
 function RoutingFlow() {
+  const { tv } = useI18n();
   return (
     <Card className="py-0 gap-0">
       <CardContent className="px-5 py-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-3">Định tuyến khuyến nghị</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-gray-500)] mb-3">{tv("Định tuyến khuyến nghị")}</p>
         <div className="flex items-center gap-0">
           {ROUTING_STEPS.map((step, i) => (
             <div key={step} className="flex items-center">
@@ -366,7 +388,7 @@ function RoutingFlow() {
                     : "border-[var(--color-gray-200)] text-[var(--color-gray-600)] bg-white"
                 )}
               >
-                {step}
+                {tv(step)}
               </div>
               {i < ROUTING_STEPS.length - 1 && (
                 <ChevronRight className="size-4 text-[var(--color-gray-300)] mx-1 shrink-0" />
@@ -395,6 +417,7 @@ function ActionCenter({ caseId, canDecide, onAction }: {
   canDecide: boolean;
   onAction: (action: ActionKey, reason?: string) => void;
 }) {
+  const { tv } = useI18n();
   const [memo, setMemo] = useState<CreditMemo | null>(null);
   const [loadingMemo, setLoadingMemo] = useState(false);
   const [memoError, setMemoError] = useState<string | null>(null);
@@ -405,7 +428,7 @@ function ActionCenter({ caseId, canDecide, onAction }: {
     try {
       setMemo(await fetchCreditMemo(caseId));
     } catch (e) {
-      setMemoError("Không thể tạo credit memo. Thử lại sau.");
+      setMemoError(tv("Không thể tạo credit memo. Thử lại sau."));
     } finally {
       setLoadingMemo(false);
     }
@@ -418,7 +441,7 @@ function ActionCenter({ caseId, canDecide, onAction }: {
         <div className="p-4 flex flex-col gap-3">
           <div>
             <p className="text-sm font-bold text-[var(--color-navy-900)] mb-0.5">Action Center</p>
-            <p className="text-xs text-[var(--color-gray-500)]">Xác nhận Credit Memo</p>
+            <p className="text-xs text-[var(--color-gray-500)]">{tv("Xác nhận Credit Memo")}</p>
           </div>
 
           {/* Generate memo button */}
@@ -431,7 +454,7 @@ function ActionCenter({ caseId, canDecide, onAction }: {
               ? <RefreshCw className="size-3.5 animate-spin" />
               : <Sparkles className="size-3.5" />
             }
-            Tự động tạo BC TDTD theo Mẫu 2 Phụ lục 03
+            {tv("Tự động tạo BC TDTD theo Mẫu 2 Phụ lục 03")}
           </button>
           {memoError && <p className="text-xs text-[var(--color-danger-600)]">{memoError}</p>}
 
@@ -447,10 +470,10 @@ function ActionCenter({ caseId, canDecide, onAction }: {
               >
                 <Icon className="size-5" style={{ color }} />
                 <span className="text-[11px] font-semibold text-center leading-tight" style={{ color }}>
-                  {label}
+                  {tv(label)}
                 </span>
                 {sublabel && (
-                  <span className="text-[10px] text-[var(--color-gray-400)]">{sublabel}</span>
+                  <span className="text-[10px] text-[var(--color-gray-400)]">{tv(sublabel)}</span>
                 )}
               </button>
             ))}
@@ -460,10 +483,10 @@ function ActionCenter({ caseId, canDecide, onAction }: {
         {/* Right: Memo preview */}
         <div className="p-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-[var(--color-navy-900)]">Xem trước Credit Memo (Mẫu 2 PL03)</p>
+            <p className="text-xs font-bold text-[var(--color-navy-900)]">{tv("Xem trước Credit Memo (Mẫu 2 PL03)")}</p>
             {memo && (
               <span className="px-2 py-0.5 rounded text-[10px] font-bold text-[var(--color-success-700)] bg-[var(--color-success-50)]">
-                Sẵn sàng
+                {tv("Sẵn sàng")}
               </span>
             )}
           </div>
@@ -471,16 +494,16 @@ function ActionCenter({ caseId, canDecide, onAction }: {
           {!memo ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center py-8 border border-dashed border-[var(--color-gray-200)] rounded-lg">
               <p className="text-xs text-[var(--color-gray-400)]">
-                Tạo Credit Memo để xem trước tài liệu
+                {tv("Tạo Credit Memo để xem trước tài liệu")}
               </p>
             </div>
           ) : (
             <div className="flex-1 border border-[var(--color-gray-200)] rounded-lg overflow-hidden">
               <div className="bg-[var(--color-gray-50)] px-3 py-2 border-b border-[var(--color-gray-200)]">
                 <p className="text-[10px] text-center font-semibold text-[var(--color-gray-700)] uppercase tracking-wide">
-                  BÁO CÁO THẨM ĐỊNH TÍN DỤNG
+                  {tv("BÁO CÁO THẨM ĐỊNH TÍN DỤNG")}
                 </p>
-                <p className="text-[10px] text-center text-[var(--color-gray-500)]">(Mẫu 2 – Phụ lục 03)</p>
+                <p className="text-[10px] text-center text-[var(--color-gray-500)]">{tv("(Mẫu 2 – Phụ lục 03)")}</p>
               </div>
               <div className="p-3 space-y-1.5 max-h-[200px] overflow-y-auto">
                 {memo.sections.slice(0, 3).map((s) => (
@@ -492,7 +515,7 @@ function ActionCenter({ caseId, canDecide, onAction }: {
               </div>
               <div className="px-3 py-2 border-t border-[var(--color-gray-100)] flex justify-end">
                 <button className="group flex items-center gap-0.5 text-xs font-semibold text-[var(--color-orange-600)]">
-                  Xem toàn bộ
+                  {tv("Xem toàn bộ")}
                   <ChevronRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5" />
                 </button>
               </div>

@@ -1,3 +1,85 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Eval: multi-agent vs single-agent (ablation Variant A) — English
+
+This implements the core part of `docs/architecture/ai-architecture_v2.md` §16 that the repo did not have: a **single-agent baseline (Variant A)** measured against the real multi-agent pipeline, so that the claim "multi-agent is better" has numbers behind it. §1.2 of that document makes this mandatory: *"Do not claim multi-agent beats single-agent without an ablation and measurements."*
+
+**Both variants run for real.** No number is filled in by hand.
+
+## How the golden cases are designed
+
+They start from **real use cases** in SME credit appraisal, not from "bugs planted in the data". Each case records the correct answer **by business logic**, completely independent of whether the current system can do it — if the pipeline misses a case, that is an honest result to read, not something to excuse in the answer file.
+
+8 archetypes × 3 variants = 24 cases (`eval/generate_cases.py`):
+
+| Archetype | Situation | Correct answer by business logic |
+|---|---|---|
+| `CLEAN_APPROVE` | Healthy financials, ample collateral, CIC group 1 | APPROVE, and **must not invent risks** |
+| `REVENUE_MISMATCH` | Financial-statement revenue differs from tax return by >5% | NEED_INFO; must raise `REVENUE_RECONCILIATION` |
+| `WEAK_DSCR` | DSCR < 1.3 (still positive) | Must not be a plain APPROVE; must raise `REPAYMENT_CAPACITY` |
+| `COLLATERAL_SHORTFALL` | Collateral after haircut < 70% of total obligations | REJECT; must raise `COLLATERAL_COVERAGE`; **must detect the conflict** |
+| `VALUATION_STALE` | Valuation report expired | Must not be an unconditional APPROVE |
+| `BAD_CREDIT_HISTORY` | CIC group ≥3, prolonged delinquency | Must not APPROVE; must raise `CREDIT_CONDUCT` |
+| `IDENTITY_UNCLEAR` | Identity match < 90/100 | REFER (not APPROVE, and **not REJECT**) |
+| `HIGH_LEVERAGE` | Debt / total capital far above the industry | Must not APPROVE; must raise `LEVERAGE` |
+
+Each case's figures are **deliberately anchored on the correct side of the real thresholds in the code** (read and verified: `financial.py:47` DSCR 1.3, `server.py:124-129` coverage tiers, `customer360.py:66` identity 90, `policy.py:33` 5% mismatch, `decision.py:58-131` the gates). This designs test cases for the right code paths — expected labels come from credit-risk logic, not from wanting a particular architecture to win.
+
+`COLLATERAL_SHORTFALL` is also a **genuine** cross-agent conflict case: Financial uses the customer-submitted valuation (coverage 1.21 → SUPPORT) while Collateral compares the post-haircut liquidation value to total obligations (0.497 → OPPOSE). Both write `COLLATERAL_COVERAGE` with opposite stances, so the conflict detector must catch it — something a single prompt structurally cannot do.
+
+## Metrics, and why these dimensions
+
+Key idea: **no need to fabricate data for multi-agent to win — just measure the dimensions where it is genuinely strong.**
+
+**Quality** (multi-agent expected to be better):
+- `decision_correct` — is the decision directionally right by business logic?
+- `risk_recall` — of the **mandatory** risks, how many were raised?
+- `numeric_accuracy` ⭐ — the most objective dimension: ground truth is computed with the exact deterministic formulas; multi-agent takes numbers from `mcp-deterministic`, single-agent computes in its head. **Both get the same formulas in the prompt/tool**, so the comparison is fair. This is the evidence for "AI-native / tool-grounded".
+- `false_positive` — does it invent non-existent risks (measured on clean cases)?
+- `consistency pass^k` — 3 runs/case, does it give the same decision?
+- `conflict_correct` — does it detect conflicts when it should?
+
+**Cost** (single-agent usually wins — kept honest): latency, number of LLM calls, tokens, and audit-trail depth (multi-agent is better here).
+
+## How to run
+
+1. **Generate cases + golden answers:** `python -m eval.generate_cases`
+2. **Single-agent (no infrastructure needed):**
+   `LLM_MOCK=false OPENAI_API_KEY=... OPENAI_BASE_URL=... python -m eval.single_agent.run_case` — use `EVAL_K=1` for a quick single pass instead of 3.
+3. **Multi-agent (needs the real stack):**
+   ```
+   docker compose up -d --build tools-mock     # load the eval data overlay
+   docker compose up -d
+   docker compose stop worker                   # REQUIRED, see warning below
+
+   docker compose run --rm -v ./artifacts:/app/artifacts -v ./eval:/app/eval \
+       api python -m eval.multi_agent.seed
+
+   docker compose run --rm -e OPENAI_API_KEY -e OPENAI_BASE_URL -e LLM_MOCK -e EVAL_K=3 \
+       -v ./eval:/app/eval -v ./artifacts:/app/artifacts \
+       worker python -m eval.multi_agent.run_case
+   ```
+   > **You must `docker compose stop worker`.** The background `worker` service consumes `analyze_queue` with `LLM_MOCK=true` per `.env`. On the first run it grabbed the case and processed it with a fake LLM before the script ran; calling `ainvoke()` again on a finished thread_id only **replays the checkpoint** instantly without re-running any node, so `llm_call_count` drops to 0 — the numbers are not real. For the same reason each pass^k repetition uses its own thread_id (`<case_id>-r<rep>`).
+4. **Aggregate:** `python -m eval.compare.aggregate` → `eval/compare/summary.md`
+
+## Instrumentation
+
+`worker/app/llm/adapter.py::complete()` used to discard `response.usage` and not time calls. It can now optionally record `{tier, provider, model, latency_ms, prompt_tokens, completion_tokens}` into a collector via `contextvars` (`set_metrics_collector`; default `None` = no-op, so normal app traffic is unchanged). asyncio copies the context into child tasks, so setting it once before `ainvoke()` captures every call from the parallel agents — **totals per case, not split per agent**.
+
+## What to know before trusting a number
+
+- **Cost is reported in tokens, not $** — no made-up unit prices.
+- **Multi-agent `tool_call_count` is a lower bound** (counted by number of Findings); for single-agent it is exactly `0` (that architecture calls no tools).
+- **`evidence_coverage` shares a name but NOT the same guarantee:** for single-agent it only means "the LLM filled in a data-field name" — an LLM can write plausible strings whether or not they exist; for multi-agent it is `evidence_ids` pointing at real records, enforced at write time by `EvidenceRequiredError` (`shared/state.py`). A like-for-like comparison would need to validate each single-agent evidence string against the case JSON.
+- **There is an issue_key synonym table** (`scoring.py::ISSUE_KEY_ALIASES`) because single-agent often names risks outside the canonical vocabulary (observed: it says "KYC" instead of `CREDIT_CONDUCT`). The table only **helps single-agent** — `risk_recall` is meant to measure whether a risk was found, not whether the vocabulary was memorised.
+- **Data is synthetic and declared as such:** every case.json carries `synthetic_flag` / `synthetic_data_notice`, in line with the repo README (all demo data is mock).
+
+---
+
+<a id="vi"></a>
+
+# 🇻🇳 Tiếng Việt
+
 # Eval: multi-agent vs single-agent (ablation Variant A)
 
 Hiện thực phần lõi của `docs/architecture/ai-architecture_v2.md` §16 mà repo

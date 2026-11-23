@@ -1,3 +1,42 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Operations — real limit issuance + dynamic risk control — slice (c) (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/lms-rm-upload` · **Status:** awaiting approval
+
+## 1. Context
+Slice (b) built the scoring engine but stops at a **recommendation**: `slink_applications` has `recommended_limit_vnd` and nothing outside the system changes. This is the **first slice with external side effects** — a difference in kind, not size: in earlier slices a mistake meant fixing the DB; here a mistake means a merchant holds an overdraft limit they should not have. Two paths: **Operations** (after the engine approves, really grant the limit through core-banking) and **Dynamic Risk Control** (cash flow drops → re-score → reduce the active limit).
+
+## 2. `core-banking-mock` is the source of truth for limits
+A new service, **write side** — unlike `slink-mock`, which is read-only. They are separate: the right to read cash flow and the right to change limits are different things, and are different systems in reality. **The actual limit is owned by core-banking**: our Postgres records what was *requested* and what was *received*, and never declares the current limit; if they differ, core-banking is right.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /core-banking/accounts/{customer_id}/overdraft` | Grant |
+| `PATCH /core-banking/accounts/{customer_id}/overdraft-limit` | Adjust |
+| `POST /core-banking/accounts/{customer_id}/overdraft/suspend` | Suspend |
+| `GET /core-banking/accounts/{customer_id}/overdraft` | Read state |
+
+State is held in process memory: a restart loses it — acceptable for a mock but it means our DB may point at a limit core-banking has forgotten (verification §9 step 8 watches for exactly this).
+
+## 3. Preventing a double grant — the real risk of this slice
+A Redis job can be redelivered (worker dies midway, or someone re-queues by hand); if Operations ran twice, the merchant would get the limit twice. **The guard is a state transition in the DB, not an in-memory flag:** `APPROVED → ISSUING → ISSUED` (or `ISSUE_FAILED`). Operations only runs if it can move `APPROVED → ISSUING`, in a single `UPDATE … WHERE status = 'APPROVED'`; the loser of a race sees 0 rows changed and **exits at once** without calling core-banking. `ISSUING` exists for this — it is the lock, not a UI decoration.
+
+## 6–7. Operations agent and Dynamic Risk Control
+The Operations agent runs right after the engine, in the same scoring job (splitting it would require protecting against job loss between two stages for no gain). It is the **sixth** agent and the only one that *acts*; it still writes a `slink_agent_decisions` row so the trace is complete.
+
+**Dynamic Risk Control** — `POST /slink/customers/{customer_id}/shock`, triggered by hand for demos: read the merchant from `slink-mock` with a shock parameter (`?shock_pct=`) → re-run `cashflow` + `risk_compliance` + `sizing_pricing` → if the new limit is lower, `PATCH` it down; if risk blocks, `POST suspend` → record a `slink_overdraft_events` row. It **does not create a new `SlinkApplication`** (it adjusts an existing limit; putting it in that table would corrupt the "number of applications" in reports). `slink-mock` accepts `shock_pct` to scale the last 30 days of cash flow, deterministically (no randomness).
+
+Sections 4, 5, 8–10 (the full `slink_applications` states, the `slink_overdraft_events` table, out of scope, verification, decisions) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Operations — cấp hạn mức thật + kiểm soát rủi ro động — lát (c)
 
 Ngày: 2026-07-19

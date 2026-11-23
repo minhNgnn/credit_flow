@@ -3,6 +3,7 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { FindingDistEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 const STANCES = ["SUPPORT", "CAUTION", "OPPOSE", "NEED_DATA"] as const;
 const STANCE_COLORS: Record<string, string> = {
@@ -13,6 +14,7 @@ const STANCE_COLORS: Record<string, string> = {
 };
 
 export default function StanceStackedBar({ findings_distribution }: { findings_distribution: FindingDistEntry[] }) {
+  const { tv } = useI18n();
   const agentIds = Array.from(new Set(findings_distribution.map((d) => d.agent_id))).sort();
   const data = agentIds.map((agent_id) => {
     const row: Record<string, string | number> = { agent_id };
@@ -20,7 +22,7 @@ export default function StanceStackedBar({ findings_distribution }: { findings_d
     for (const d of findings_distribution) if (d.agent_id === agent_id) row[d.stance] = d.n;
     return row;
   });
-  if (agentIds.length === 0) return <div className="text-sm text-muted-foreground">Không có nhận định.</div>;
+  if (agentIds.length === 0) return <div className="text-sm text-muted-foreground">{tv("Không có nhận định.")}</div>;
   return (
     <div className="h-60">
       <ResponsiveContainer>

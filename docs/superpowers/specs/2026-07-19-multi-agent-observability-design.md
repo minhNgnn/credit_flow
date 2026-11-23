@@ -1,3 +1,26 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# Multi-Agent Observability Dashboard — Design (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/multi-agent-observability` (from `origin/frontend`) · **Scope:** a 2–4 day hackathon task · **Deliverable:** a Next.js dashboard showing agent traces, task status, decisions and collaboration flows for the multi-agent credit pipeline (LangGraph + 4 expert agents + 4 MCP servers).
+
+## 1. Goals and scope
+Four needs: **Trace** (every LLM call — prompt, response, tokens, cost, latency; every MCP tool call — input, output, latency; every graph node — start/end, parent/child — keyed by `case_id`); **Status** (which cases and which agents are running, at which round); **Decisions** (findings with version, change_reason, evidence, citations; the final DecisionPackage with hard gates, scores, strengths, risks, dissent, conditions); **Collaboration** (4-agent fan-out, challenge loop, conflict detection, animated live).
+
+**In scope:** an on-prem **Langfuse** container (bank data residency — no credit PII to SaaS); the Langfuse Python SDK native in `worker/app/llm/adapter.py` plus a new `call_tool()` helper with automatic context propagation; one FastAPI `/observability/*` router reading existing Postgres; a Next.js `/observability` route group with 4 tabs in the SHB Design System; live SSE over the existing Redis pub/sub; a server-side Next.js route handler proxying the Langfuse REST API (keeps the API key hidden).
+
+**Out of scope (YAGNI):** a separate OpenTelemetry/Prometheus pipeline; audit PDF export; replay benchmark; tracing the Chat Orchestrator (v1 traces only the analysis graph); LangGraph-specific node-level auto-tracing; cost alerts/SLOs/SRE dashboards.
+
+Sections 2–14 (research report on the current system, overall architecture, fixed interfaces, concrete data flow, routing, banking style, error handling, testing, YAGNI warnings, new environment variables, 4-day plan, risks, references) are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Multi-Agent Observability Dashboard — Design
 
 - **Ngày**: 2026-07-19

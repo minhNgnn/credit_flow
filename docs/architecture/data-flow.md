@@ -1,3 +1,21 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# SHBExpert Flow — Data and Activity Flows (English)
+
+> Same governance notice as the rest of the set: policies, thresholds and approval flows are competition simulations; the system gives **recommendations** only. Service names (`web`, `api`, `worker`, `tools-mock`, `postgres`, `qdrant`, `minio`, `redis`) match [`overview.md`](./overview.md) and `docker-compose.yml`. Business sources: `PRD1.1.docx` §4, 7, 9, 10.3, 14 and Appendix A. Diagrams and detail are in the Vietnamese section below.
+
+**Section guide:** 1 Data map · 2 **Case state machine** · 3 End-to-end flow · 4 Intake and extraction · 5 Challenge flow · 6 Supplement flow and impact map · 7 Decision flow · 8 Human-in-the-loop flow · 9 Post-approval conditions flow · 10 Audit and event flow (event schema) · 11 Flow ↔ demo scenario C06 · 12 Traceability table flow ↔ FR ↔ acceptance scenario · 13 Read next.
+
+**Case state machine (section 2):**
+
+`DRAFT` —(RM submits intake)→ `INTAKE_VALIDATION` → `NEED_INFO` (documents missing) or `ANALYZING` (complete). `NEED_INFO` —(RM supplements)→ `INTAKE_VALIDATION`. `ANALYZING` → `CHALLENGE` (conflicts found) or `READY_FOR_REVIEW` (none). `CHALLENGE` → `READY_FOR_REVIEW` (merged: resolved, or two rounds exhausted). From `READY_FOR_REVIEW`: CO **rerun** → `ANALYZING`; CO **return to RM** → `NEED_INFO`; CO **finalize** → `SUBMITTED_FOR_APPROVAL` → `CONDITION_FULFILLMENT` (outcome from the mock LOS) → `READY_FOR_DISBURSEMENT` (all conditions precedent met).
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # SHBExpert Flow — Luồng dữ liệu và hoạt động
 
 > **Bộ tài liệu kiến trúc** — 3 file:

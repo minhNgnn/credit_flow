@@ -1,6 +1,7 @@
 "use client";
 
 import type { SeverityDistEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 const SEVERITIES = ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
 const SEV_OPACITY: Record<string, number> = {
@@ -12,8 +13,9 @@ const SEV_OPACITY: Record<string, number> = {
 };
 
 export default function SeverityHeatmap({ severity_distribution }: { severity_distribution: SeverityDistEntry[] }) {
+  const { tv } = useI18n();
   const agentIds = Array.from(new Set(severity_distribution.map((d) => d.agent_id))).sort();
-  if (agentIds.length === 0) return <div className="text-sm text-muted-foreground">Không có dữ liệu mức độ.</div>;
+  if (agentIds.length === 0) return <div className="text-sm text-muted-foreground">{tv("Không có dữ liệu mức độ.")}</div>;
   const lookup = new Map<string, number>();
   for (const d of severity_distribution) lookup.set(`${d.agent_id}|${d.severity}`, d.n);
   const maxN = Math.max(1, ...severity_distribution.map((d) => d.n));

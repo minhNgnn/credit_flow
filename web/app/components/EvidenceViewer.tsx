@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { EvidenceItem } from "../lib/types";
+import { useI18n } from "../lib/i18n";
 
 // Standard react-pdf/pdfjs-dist bundler setup (see react-pdf README) —
 // webpack resolves this to a static asset URL at build time, no manual
@@ -35,6 +36,7 @@ function fmtValue(value: Record<string, unknown>): string {
 }
 
 export function EvidenceViewer({ evidence, onClose }: { evidence: EvidenceItem; onClose: () => void }) {
+  const { tv } = useI18n();
   const [numPages, setNumPages] = useState(1);
   const [pageNumber, setPageNumber] = useState(evidence.page ?? 1);
   const [scale, setScale] = useState(1.3);
@@ -81,7 +83,7 @@ export function EvidenceViewer({ evidence, onClose }: { evidence: EvidenceItem; 
           }}
         >
           <div>
-            <div style={{ fontWeight: 700 }}>{evidence.doc_type?.replace(/_/g, " ") ?? "Tài liệu"}</div>
+            <div style={{ fontWeight: 700 }}>{evidence.doc_type?.replace(/_/g, " ") ?? tv("Tài liệu")}</div>
             <div className="muted" style={{ fontSize: 12 }}>
               Trang {pageNumber} / {numPages}
             </div>
@@ -140,8 +142,8 @@ export function EvidenceViewer({ evidence, onClose }: { evidence: EvidenceItem; 
               <Document
                 file={evidence.viewer_url}
                 onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-                loading={<p className="muted">Đang tải PDF...</p>}
-                error={<p style={{ color: "var(--oppose)" }}>Không tải được PDF.</p>}
+                loading={<p className="muted">{tv("Đang tải PDF...")}</p>}
+                error={<p style={{ color: "var(--oppose)" }}>{tv("Không tải được PDF.")}</p>}
               >
                 <Page
                   pageNumber={pageNumber}
@@ -199,7 +201,7 @@ export function EvidenceViewer({ evidence, onClose }: { evidence: EvidenceItem; 
             </div>
             {evidence.document_url && (
               <a href={evidence.document_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--accent)" }}>
-                Tải PDF gốc →
+                {tv("Tải PDF gốc →")}
               </a>
             )}
           </div>

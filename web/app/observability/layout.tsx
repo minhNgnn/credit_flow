@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useI18n } from "../lib/i18n";
 
 const TABS = [
   { href: "/observability/status", label: "Tình trạng" },
@@ -9,13 +12,14 @@ const TABS = [
 ] as const;
 
 export default function ObservabilityLayout({ children }: { children: ReactNode }) {
+  const { tv } = useI18n();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-card px-6 py-3">
         <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Trở về
+          {tv("← Trở về")}
         </Link>
-        <h1 className="mt-1 text-lg font-semibold">Quan sát đa tác nhân</h1>
+        <h1 className="mt-1 text-lg font-semibold">{tv("Quan sát đa tác nhân")}</h1>
       </header>
       <nav className="flex gap-4 border-b border-border px-6">
         {TABS.map((t) => (
@@ -24,7 +28,7 @@ export default function ObservabilityLayout({ children }: { children: ReactNode 
             href={t.href}
             className="border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
           >
-            {t.label}
+            {tv(t.label)}
           </Link>
         ))}
       </nav>

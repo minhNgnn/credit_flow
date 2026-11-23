@@ -3,6 +3,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import type { DecisionDistEntry } from "../../lib/monitor";
+import { useI18n } from "../../lib/i18n";
 
 const COLOR: Record<string, string> = {
   APPROVE: "#00853E",
@@ -13,7 +14,8 @@ const COLOR: Record<string, string> = {
 };
 
 export default function DecisionDonut({ decision_distribution }: { decision_distribution: DecisionDistEntry[] }) {
-  if (decision_distribution.length === 0) return <div className="text-sm text-muted-foreground">Chưa có quyết định.</div>;
+  const { tv } = useI18n();
+  if (decision_distribution.length === 0) return <div className="text-sm text-muted-foreground">{tv("Chưa có quyết định.")}</div>;
   const data = decision_distribution.map((d) => ({ name: d.recommendation, value: d.n }));
   return (
     <div>

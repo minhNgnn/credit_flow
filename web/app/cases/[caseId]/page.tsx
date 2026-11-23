@@ -26,13 +26,18 @@ import { Progress } from "../../components/ui/progress";
 import { Separator } from "../../components/ui/separator";
 import { Skeleton } from "../../components/ui/skeleton";
 import { cn } from "../../lib/utils";
+import { useI18n, type Lang } from "../../lib/i18n";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatVnd(v: number | null | undefined): string {
+function formatVnd(v: number | null | undefined, lang: Lang = "vi"): string {
   if (v == null) return "—";
-  return `${(v / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 3 })} tỷ VND`;
+  return lang === "en"
+    ? `${(v / 1_000_000_000).toLocaleString("en-US", { maximumFractionDigits: 3 })} bn VND`
+    : `${(v / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 3 })} tỷ VND`;
 }
+
+type TV = (vi: string, vars?: Record<string, string | number>) => string;
 
 function getStanceLabel(s: string): string {
   if (s === "SUPPORT") return "Tốt";
@@ -117,45 +122,45 @@ const AGENT_CARDS = [
   },
 ];
 
-function getPrimaryMetric(f: Finding, agentId: string): { label: string; value: string } {
+function getPrimaryMetric(f: Finding, agentId: string, tv: TV): { label: string; value: string } {
   if (agentId === "financial_analysis") {
     const dscr = f.metrics?.dscr;
-    if (dscr) return { label: "DSCR (Ước tính)", value: `${dscr.toFixed(2)}x` };
+    if (dscr) return { label: tv("DSCR (Ước tính)"), value: `${dscr.toFixed(2)}x` };
     const pd = f.metrics?.pd_estimate;
-    if (pd) return { label: "PD (XHTD nội bộ)", value: `${(pd * 100).toFixed(2)}%` };
+    if (pd) return { label: tv("PD (XHTD nội bộ)"), value: `${(pd * 100).toFixed(2)}%` };
   }
   if (agentId === "collateral_legal") {
     const cr = f.metrics?.coverage_ratio;
-    if (cr && cr > 0) return { label: "LTV dự kiến", value: `${Math.round((1 / cr) * 100)}%` };
+    if (cr && cr > 0) return { label: tv("LTV dự kiến"), value: `${Math.round((1 / cr) * 100)}%` };
   }
   if (agentId === "customer_360") {
     const debtGroup = f.metrics?.cic_debt_group;
-    if (debtGroup != null) return { label: "Nhóm nợ CIC", value: `Nhóm ${debtGroup}` };
+    if (debtGroup != null) return { label: tv("Nhóm nợ CIC"), value: tv("Nhóm {n}", { n: debtGroup }) };
     const util = f.metrics?.limit_utilization_ratio;
-    if (util != null) return { label: "Tỷ lệ sử dụng HM", value: `${Math.round(util * 100)}%` };
+    if (util != null) return { label: tv("Tỷ lệ sử dụng HM"), value: `${Math.round(util * 100)}%` };
   }
   const scorePct = Math.round(f.confidence * 100);
-  return { label: "Điểm đánh giá", value: `${scorePct}/100` };
+  return { label: tv("Điểm đánh giá"), value: `${scorePct}/100` };
 }
 
-function getAgentBullets(f: Finding, agentId: string): string[] {
+function getAgentBullets(f: Finding, agentId: string, tv: TV): string[] {
   const bullets: string[] = [f.claim];
   if (agentId === "collateral_legal") {
     const cr = f.metrics?.coverage_ratio;
     if (cr && cr > 0) {
       const ltv = Math.round((1 / cr) * 100);
-      bullets.push(`LTV hiện tại ${ltv}% < ngưỡng 65%.`);
+      bullets.push(tv("LTV hiện tại {n}% < ngưỡng 65%.", { n: ltv }));
     }
   }
   if (agentId === "financial_analysis") {
     const dscr = f.metrics?.dscr;
-    if (dscr) bullets.push(`Khả năng trả nợ tốt, DSCR = ${dscr.toFixed(2)}x.`);
+    if (dscr) bullets.push(tv("Khả năng trả nợ tốt, DSCR = {n}x.", { n: dscr.toFixed(2) }));
   }
   if (agentId === "customer_360") {
     const util = f.metrics?.limit_utilization_ratio;
-    if (util != null) bullets.push(`Tỷ lệ sử dụng hạn mức: ${Math.round(util * 100)}%.`);
+    if (util != null) bullets.push(tv("Tỷ lệ sử dụng hạn mức: {n}%.", { n: Math.round(util * 100) }));
     const debtGroup = f.metrics?.cic_debt_group;
-    if (debtGroup != null) bullets.push(`Nhóm nợ CIC: Nhóm ${debtGroup}.`);
+    if (debtGroup != null) bullets.push(tv("Nhóm nợ CIC: Nhóm {n}.", { n: debtGroup }));
   }
   if (f.recommended_action) bullets.push(f.recommended_action);
   return bullets.slice(0, 4);
@@ -189,10 +194,11 @@ function AgentCard({
   docs: { document_id: string; doc_type: string }[];
   onFindingClick: (f: Finding) => void;
 }) {
+  const { tv } = useI18n();
   const hasFinding = Boolean(finding);
   const scorePct = finding ? Math.round(finding.confidence * 100) : null;
-  const primary = finding ? getPrimaryMetric(finding, config.id) : null;
-  const bullets = finding ? getAgentBullets(finding, config.id) : [];
+  const primary = finding ? getPrimaryMetric(finding, config.id, tv) : null;
+  const bullets = finding ? getAgentBullets(finding, config.id, tv) : [];
   const stanceColor = finding ? getStanceDot(finding.stance) : "var(--color-gray-400)";
 
   return (
@@ -208,14 +214,14 @@ function AgentCard({
           </div>
           <div>
             <p className="text-sm font-bold text-[var(--color-navy-900)]">{config.name}</p>
-            <p className="text-xs text-muted-foreground leading-snug mt-0.5 max-w-[200px]">{config.desc}</p>
+            <p className="text-xs text-muted-foreground leading-snug mt-0.5 max-w-[200px]">{tv(config.desc)}</p>
           </div>
         </div>
         <Badge
           variant={hasFinding ? "success" : "warning"}
           className="rounded-sm text-[11px] shrink-0 mt-0.5"
         >
-          {hasFinding ? "Hoàn tất" : "Đang xử lý"}
+          {hasFinding ? tv("Hoàn tất") : tv("Đang xử lý")}
         </Badge>
       </div>
 
@@ -230,7 +236,7 @@ function AgentCard({
               <p className="text-[11px] text-muted-foreground font-semibold mb-0.5">{primary.label}</p>
               <p
                 className="text-[26px] font-extrabold leading-none font-[var(--font-display)]"
-                style={{ color: primary.label.includes("Điểm") ? "var(--color-navy-700)" : "var(--color-orange-600)" }}
+                style={{ color: primary.value.endsWith("/100") ? "var(--color-navy-700)" : "var(--color-orange-600)" }}
               >
                 {primary.value}
               </p>
@@ -238,29 +244,29 @@ function AgentCard({
 
             {/* Quick verdict */}
             <div className="text-right">
-              <p className="text-[11px] text-muted-foreground font-semibold mb-1">Kết luận nhanh</p>
+              <p className="text-[11px] text-muted-foreground font-semibold mb-1">{tv("Kết luận nhanh")}</p>
               <div className="flex items-center justify-end gap-1.5">
                 <div className="size-2 rounded-full shrink-0" style={{ background: stanceColor }} />
                 <span className="text-sm font-bold" style={{ color: stanceColor }}>
-                  {getStanceLabel(finding!.stance)}
+                  {tv(getStanceLabel(finding!.stance))}
                 </span>
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground py-1">Đang phân tích…</p>
+          <p className="text-sm text-muted-foreground py-1">{tv("Đang phân tích…")}</p>
         )}
 
         {/* Score bar + confidence */}
         {scorePct !== null && (
           <div className="mt-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <p className="text-[11px] text-muted-foreground">Điểm đánh giá</p>
+              <p className="text-[11px] text-muted-foreground">{tv("Điểm đánh giá")}</p>
               <p className="text-xs font-bold text-foreground ml-auto">{scorePct}%</p>
             </div>
             <Progress value={scorePct} indicatorClassName={confidenceBar(scorePct)} className="h-1.5" />
             <div className="flex items-center justify-between">
-              <p className="text-[11px] text-muted-foreground">Độ tin cậy</p>
+              <p className="text-[11px] text-muted-foreground">{tv("Độ tin cậy")}</p>
               <p className="text-xs font-bold text-foreground">{scorePct}%</p>
             </div>
           </div>
@@ -289,7 +295,7 @@ function AgentCard({
           <Separator />
           <div className="px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-              Bảng chứng chính
+              {tv("Bảng chứng chính")}
             </p>
             <div className="flex flex-col gap-1.5">
               {docs.slice(0, 3).map((d) => (
@@ -321,7 +327,7 @@ function AgentCard({
             className="group px-4 py-2.5 text-xs font-semibold text-primary hover:bg-muted/50 transition-colors text-left flex items-center gap-1 no-underline"
             onClick={() => onFindingClick(finding)}
           >
-            Xem phân tích chi tiết <ChevronRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5" />
+            {tv("Xem phân tích chi tiết")} <ChevronRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5" />
           </button>
         </>
       )}
@@ -332,12 +338,13 @@ function AgentCard({
 // ─── Planner workflow bar ─────────────────────────────────────────────────────
 
 function PlannerWorkflow({ state, updatedAt }: { state: string; updatedAt?: string }) {
+  const { tv, lang } = useI18n();
   const activeStep = getActiveStep(state);
-  const stateLabel = state === "ANALYZING" ? "Đang thực hiện"
-    : state === "READY_FOR_REVIEW" ? "Sẵn sàng phê duyệt"
-    : state === "APPROVED" ? "Đã phê duyệt"
-    : state === "REJECTED" ? "Đã từ chối"
-    : "Đang xử lý";
+  const stateLabel = state === "ANALYZING" ? tv("Đang thực hiện")
+    : state === "READY_FOR_REVIEW" ? tv("Sẵn sàng phê duyệt")
+    : state === "APPROVED" ? tv("Đã phê duyệt")
+    : state === "REJECTED" ? tv("Đã từ chối")
+    : tv("Đang xử lý");
 
   return (
     <Card className="py-0 gap-0">
@@ -350,14 +357,15 @@ function PlannerWorkflow({ state, updatedAt }: { state: string; updatedAt?: stri
           <div>
             <p className="text-sm font-bold text-[var(--color-navy-900)]">Planner Agent</p>
             <p className="text-[11px] text-muted-foreground leading-snug">
-              Điều phối và giám sát luồng thẩm định theo Workflow 1.2.3
+              {tv("Điều phối và giám sát luồng thẩm định theo Workflow 1.2.3")}
             </p>
           </div>
         </div>
 
         {/* Steps */}
         <div className="flex-1 flex items-center justify-between min-w-0 gap-1">
-          {WF_STEPS.map((label, i) => {
+          {WF_STEPS.map((label0, i) => {
+            const label = tv(label0);
             const isDone    = i < activeStep;
             const isActive  = i === activeStep;
             const isPending = i > activeStep;
@@ -386,7 +394,7 @@ function PlannerWorkflow({ state, updatedAt }: { state: string; updatedAt?: stri
                     isActive && "text-[var(--color-orange-600)]",
                     isPending && "text-muted-foreground",
                   )}>
-                    {isDone ? "✓ Hoàn tất" : isActive ? "⟳ Đang thực hiện" : "Chờ xử lý"}
+                    {isDone ? `✓ ${tv("Hoàn tất")}` : isActive ? `⟳ ${tv("Đang thực hiện")}` : tv("Chờ xử lý")}
                   </p>
                 </div>
                 {i < WF_STEPS.length - 1 && (
@@ -402,7 +410,7 @@ function PlannerWorkflow({ state, updatedAt }: { state: string; updatedAt?: stri
 
         {/* Status */}
         <div className="flex-none border-l border-border pl-5 text-right">
-          <p className="text-[11px] text-muted-foreground font-semibold mb-1">Trạng thái luồng</p>
+          <p className="text-[11px] text-muted-foreground font-semibold mb-1">{tv("Trạng thái luồng")}</p>
           <Badge
             variant={state === "ANALYZING" ? "navy" : state === "READY_FOR_REVIEW" ? "success" : "muted"}
             className="rounded-sm"
@@ -411,7 +419,7 @@ function PlannerWorkflow({ state, updatedAt }: { state: string; updatedAt?: stri
           </Badge>
           {updatedAt && (
             <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1 justify-end">
-              Cập nhật lúc: {new Date(updatedAt).toLocaleString("vi-VN", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+              {tv("Cập nhật lúc")}: {new Date(updatedAt).toLocaleString(lang === "en" ? "en-GB" : "vi-VN", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}
               <RefreshCw className="size-2.5" />
             </p>
           )}
@@ -432,6 +440,7 @@ function ScoreSummary({
   hardGates: { gate_id: string; status: string; reason: string | null }[];
   conditions: string[];
 }) {
+  const { tv } = useI18n();
   const gaugeData = [{ value: compositePct ?? 0, fill: "var(--color-success-600)" }];
   const creditRating = deriveCreditRating(compositePct);
   const covenantFlags = hardGates.filter((g) => g.status !== "PASS").length;
@@ -440,25 +449,25 @@ function ScoreSummary({
     {
       label: "LTV",
       value: ltvPct != null ? `${ltvPct}%` : "—",
-      verdict: ltvPct != null && ltvPct < 65 ? "Tốt" : ltvPct != null && ltvPct < 80 ? "Trung bình" : "Kém",
+      verdict: ltvPct != null && ltvPct < 65 ? tv("Tốt") : ltvPct != null && ltvPct < 80 ? tv("Trung bình") : tv("Kém"),
       color: ltvPct != null && ltvPct < 65 ? "var(--color-success-600)" : ltvPct != null && ltvPct < 80 ? "var(--color-warning-600)" : "var(--color-danger-600)",
     },
     {
-      label: "CIC trạng thái",
-      value: "Nhóm 1",
-      verdict: "Tốt",
+      label: tv("CIC trạng thái"),
+      value: tv("Nhóm {n}", { n: 1 }),
+      verdict: tv("Tốt"),
       color: "var(--color-success-600)",
     },
     {
-      label: "DSCR (Ước tính)",
+      label: tv("DSCR (Ước tính)"),
       value: dscrValue != null ? `${dscrValue.toFixed(2)}x` : "—",
-      verdict: dscrValue != null && dscrValue >= 1.2 ? "Tốt" : "Kém",
+      verdict: dscrValue != null && dscrValue >= 1.2 ? tv("Tốt") : tv("Kém"),
       color: dscrValue != null && dscrValue >= 1.2 ? "var(--color-success-600)" : "var(--color-danger-600)",
     },
     {
       label: "Covenant flags",
       value: `${covenantFlags}`,
-      verdict: covenantFlags === 0 ? "Tốt" : "Cảnh báo",
+      verdict: covenantFlags === 0 ? tv("Tốt") : tv("Cảnh báo"),
       color: covenantFlags === 0 ? "var(--color-success-600)" : "var(--color-warning-600)",
     },
   ];
@@ -466,7 +475,7 @@ function ScoreSummary({
   return (
     <Card className="py-0 gap-0 flex flex-col">
       <CardHeader className="pt-4 pb-3 px-5">
-        <CardTitle className="text-sm">Tổng hợp chấm điểm & chỉ số chính</CardTitle>
+        <CardTitle className="text-sm">{tv("Tổng hợp chấm điểm & chỉ số chính")}</CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="p-5 flex flex-col gap-5 flex-1">
@@ -500,22 +509,22 @@ function ScoreSummary({
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-lg font-extrabold text-[var(--color-success-600)]">{compositePct}/100</span>
-                <span className="text-[10px] text-muted-foreground">Tốt</span>
+                <span className="text-[10px] text-muted-foreground">{tv("Tốt")}</span>
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground font-semibold mb-1">Điểm tổng hợp</p>
+              <p className="text-xs text-muted-foreground font-semibold mb-1">{tv("Điểm tổng hợp")}</p>
               <p className="text-2xl font-extrabold text-[var(--color-success-600)] font-[var(--font-display)]">
                 {compositePct}%
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Dựa trên {4} chiều đánh giá</p>
+              <p className="text-xs text-muted-foreground mt-1">{tv("Dựa trên {n} chiều đánh giá", { n: 4 })}</p>
             </div>
           </div>
         )}
 
         {/* Score bar */}
         <div>
-          <p className="text-[11px] font-bold text-muted-foreground mb-1.5">Thang điểm khuyến nghị</p>
+          <p className="text-[11px] font-bold text-muted-foreground mb-1.5">{tv("Thang điểm khuyến nghị")}</p>
           <div className="relative h-3 rounded-full overflow-hidden" style={{
             background: "linear-gradient(to right, var(--color-danger-600), var(--color-warning-600), var(--color-success-600))",
           }}>
@@ -533,7 +542,7 @@ function ScoreSummary({
 
         {/* Credit rating */}
         <div>
-          <p className="text-[11px] font-bold text-muted-foreground mb-2">Xếp hạng nội bộ</p>
+          <p className="text-[11px] font-bold text-muted-foreground mb-2">{tv("Xếp hạng nội bộ")}</p>
           <div className="inline-flex items-center justify-center px-5 py-2 border-2 border-[var(--color-navy-700)] rounded-lg">
             <span className="text-xl font-extrabold text-[var(--color-navy-700)] font-[var(--font-display)]">
               {creditRating}
@@ -559,18 +568,19 @@ function VerdictCard({
   findingByDisplayId: (id: string) => Finding | undefined;
   setSelectedFinding: (f: Finding) => void;
 }) {
+  const { tv, lang } = useI18n();
   if (!decision) {
     return (
       <Card className="py-0 gap-0 flex flex-col">
         <CardHeader className="pt-4 pb-3 px-5">
           <CardTitle className="text-sm flex items-center gap-1.5">
-            🎯 Kết luận & khuyến nghị
+            {tv("🎯 Kết luận & khuyến nghị")}
           </CardTitle>
         </CardHeader>
         <Separator />
         <CardContent className="p-5 flex-1 flex items-center justify-center">
           <p className="text-sm text-muted-foreground text-center">
-            Chưa có kết quả phân tích.<br />Chạy phân tích để xem kết luận.
+            {tv("Chưa có kết quả phân tích.")}<br />{tv("Chạy phân tích để xem kết luận.")}
           </p>
         </CardContent>
       </Card>
@@ -584,14 +594,14 @@ function VerdictCard({
     <Card className="py-0 gap-0 flex flex-col">
       <CardHeader className="pt-4 pb-3 px-5 flex flex-row items-center justify-between">
         <CardTitle className="text-sm flex items-center gap-1.5">
-          🎯 Kết luận & khuyến nghị
+          {tv("🎯 Kết luận & khuyến nghị")}
         </CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="p-5 flex flex-col gap-4 flex-1">
         {/* Verdict */}
         <div>
-          <p className="text-[11px] text-muted-foreground font-semibold mb-1.5">Kết luận</p>
+          <p className="text-[11px] text-muted-foreground font-semibold mb-1.5">{tv("Kết luận")}</p>
           <div className="flex items-center gap-2">
             <div
               className="size-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
@@ -600,20 +610,20 @@ function VerdictCard({
               {verdict.icon}
             </div>
             <p className="text-xl font-extrabold font-[var(--font-display)]" style={{ color: verdict.color }}>
-              {verdict.text}
+              {tv(verdict.text)}
             </p>
           </div>
         </div>
 
         {/* Recommendation details */}
         <div>
-          <p className="text-[11px] text-muted-foreground font-semibold mb-1.5">Khuyến nghị</p>
+          <p className="text-[11px] text-muted-foreground font-semibold mb-1.5">{tv("Khuyến nghị")}</p>
           <div className="flex flex-col gap-1 text-sm text-foreground">
             {decision.recommended_amount_vnd != null && (
-              <p>Phê duyệt hạn mức <span className="font-bold">{formatVnd(decision.recommended_amount_vnd)}</span></p>
+              <p>{tv("Phê duyệt hạn mức")} <span className="font-bold">{formatVnd(decision.recommended_amount_vnd, lang)}</span></p>
             )}
             {decision.recommended_tenor_months != null && (
-              <p>Kỳ hạn <span className="font-bold">{decision.recommended_tenor_months} tháng</span></p>
+              <p>{tv("Kỳ hạn")} <span className="font-bold">{decision.recommended_tenor_months} tháng</span></p>
             )}
           </div>
         </div>
@@ -623,7 +633,7 @@ function VerdictCard({
         {/* Strengths as reasons */}
         {strengths.length > 0 && (
           <div>
-            <p className="text-[11px] text-muted-foreground font-semibold mb-2">Lý do chính</p>
+            <p className="text-[11px] text-muted-foreground font-semibold mb-2">{tv("Lý do chính")}</p>
             <ul className="flex flex-col gap-1.5">
               {strengths.map((id) => {
                 const f = findingByDisplayId(id);
@@ -647,7 +657,7 @@ function VerdictCard({
           <>
             <Separator />
             <div>
-              <p className="text-[11px] text-muted-foreground font-semibold mb-2">Điều kiện tiên quyết</p>
+              <p className="text-[11px] text-muted-foreground font-semibold mb-2">{tv("Điều kiện tiên quyết")}</p>
               <ol className="flex flex-col gap-1.5 list-decimal list-inside">
                 {decision.conditions_precedent.slice(0, 3).map((c, i) => (
                   <li key={i} className="text-xs text-foreground">{c}</li>
@@ -660,7 +670,7 @@ function VerdictCard({
         {/* Actions */}
         <div className="mt-auto flex flex-col gap-2 pt-2">
           <Button size="sm" onClick={onAccept} disabled={!canDecide} title={canDecide ? undefined : staleTitle}>
-            ✓ Chấp nhận khuyến nghị
+            {tv("✓ Chấp nhận khuyến nghị")}
           </Button>
           <Button variant="outline" size="sm" onClick={onOverride} disabled={!canDecide} title={canDecide ? undefined : staleTitle}>
             ↑ Override
@@ -679,6 +689,7 @@ function RAGEvidence({
   findings: Finding[];
   onFindingClick: (f: Finding) => void;
 }) {
+  const { tv } = useI18n();
   // Collect citations across all findings
   const citations = findings.flatMap((f) =>
     f.citations.map((c) => ({ ...c, findingClaim: f.claim, finding: f }))
@@ -689,17 +700,17 @@ function RAGEvidence({
     <Card className="py-0 gap-0 flex flex-col">
       <CardHeader className="pt-4 pb-3 px-5 flex flex-row items-center justify-between">
         <CardTitle className="text-sm flex items-center gap-1.5">
-          Cơ sở tri thức (RAG Evidence)
+          {tv("Cơ sở tri thức (RAG Evidence)")}
           <Info className="size-3.5 text-muted-foreground" />
         </CardTitle>
         <Button variant="ghost" size="sm" className="text-xs text-primary gap-0.5 -mr-2">
-          Xem tất cả <ChevronRight className="size-3" />
+          {tv("Xem tất cả")} <ChevronRight className="size-3" />
         </Button>
       </CardHeader>
       <Separator />
       <CardContent className="p-5 flex flex-col gap-3 flex-1">
         {topCitations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Chưa có dữ liệu tri thức.</p>
+          <p className="text-sm text-muted-foreground">{tv("Chưa có dữ liệu tri thức.")}</p>
         ) : (
           topCitations.map((c, i) => (
             <div
@@ -717,8 +728,8 @@ function RAGEvidence({
                 <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{c.text}</p>
                 {c.source_type && (
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Nguồn: {c.source_id}
-                    {c.version ? ` – Phiên bản ${c.version}` : ""}
+                    {tv("Nguồn")}: {c.source_id}
+                    {c.version ? ` – ${tv("Phiên bản")} ${c.version}` : ""}
                   </p>
                 )}
               </div>
@@ -737,6 +748,7 @@ type Tab = "review" | "overview" | "chat";
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CasePage() {
+  const { tv, lang } = useI18n();
   const params = useParams();
   const caseId = params.caseId as string;
 
@@ -777,7 +789,7 @@ export default function CasePage() {
       const res = await fetch(`/api/cases/${caseId}/memo/pdf`, { cache: "no-store" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        alert(body.detail ?? "Không thể xuất PDF — hãy tạo tờ trình trước.");
+        alert(body.detail ?? tv("Không thể xuất PDF — hãy tạo tờ trình trước."));
         return;
       }
       const blob = await res.blob();
@@ -788,7 +800,7 @@ export default function CasePage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Lỗi khi tải PDF.");
+      alert(tv("Lỗi khi tải PDF."));
     }
   };
 
@@ -798,13 +810,13 @@ export default function CasePage() {
       await refresh();
       if (action === "rerun") { setBusy(true); setLog([]); }
     } catch (err) {
-      alert(`Không thực hiện được — hãy tải lại trang. (${String(err)})`);
+      alert(tv("Không thực hiện được — hãy tải lại trang. ({err})", { err: String(err) }));
       await refresh();
     }
   };
 
   const doOverride = async () => {
-    const reason = prompt("Override khuyến nghị hệ thống — bắt buộc nhập lý do (FR-11):");
+    const reason = prompt(tv("Override khuyến nghị hệ thống — bắt buộc nhập lý do (FR-11):"));
     if (!reason) return;
     await doAction("override", reason);
   };
@@ -826,7 +838,7 @@ export default function CasePage() {
   const decision   = caseDetail.decision;
   const isFresh    = caseDetail.findings.length === 0 && !decision;
   const canDecide  = caseDetail.state === "READY_FOR_REVIEW";
-  const staleTitle = `Chỉ dùng được khi hồ sơ READY_FOR_REVIEW (hiện tại: ${caseDetail.state})`;
+  const staleTitle = tv("Chỉ dùng được khi hồ sơ READY_FOR_REVIEW (hiện tại: {state})", { state: caseDetail.state });
 
   const scores       = decision?.scores ?? [];
   const scoreSum     = scores.reduce((s, x) => s + x.score, 0);
@@ -865,7 +877,7 @@ export default function CasePage() {
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "360° Overview" },
     { key: "review",   label: "AI Multi-Agent Review" },
-    { key: "chat",     label: "Trao đổi & Kết luận" },
+    { key: "chat",     label: tv("Trao đổi & Kết luận") },
   ];
 
   return (
@@ -877,13 +889,13 @@ export default function CasePage() {
         <div className="flex items-center gap-4 px-6 py-3">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground shrink-0">
             <span className="text-muted-foreground cursor-pointer hover:text-foreground">☰</span>
-            <span>Chi tiết hồ sơ</span>
+            <span>{tv("Chi tiết hồ sơ")}</span>
           </div>
           <div className="flex-1 max-w-lg mx-auto relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm hồ sơ, khách hàng, mã hồ sơ…"
+              placeholder={tv("Tìm kiếm hồ sơ, khách hàng, mã hồ sơ…")}
               className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-muted/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[var(--color-navy-500)]"
             />
           </div>
@@ -892,7 +904,7 @@ export default function CasePage() {
             <div className="flex items-center gap-2 text-sm">
               <div className="size-8 rounded-full bg-[var(--color-navy-700)] flex items-center justify-center text-white text-xs font-bold shrink-0">NA</div>
               <div className="hidden sm:block">
-                <p className="font-semibold text-foreground text-xs leading-tight">Nguyễn Văn An</p>
+                <p className="font-semibold text-foreground text-xs leading-tight">{tv("Nguyễn Văn An")}</p>
                 <p className="text-[11px] text-muted-foreground">CBTD</p>
               </div>
               <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
@@ -904,14 +916,14 @@ export default function CasePage() {
         <div className="flex items-center justify-between px-6 py-2 border-t border-border bg-muted/30">
           <Link href="/" className="group flex items-center gap-1.5 text-sm text-[var(--color-orange-600)] transition-colors no-underline">
             <ChevronRight className="size-4 rotate-180 transition-transform duration-150 group-hover:-translate-x-0.5" />
-            Quay lại danh sách
+            {tv("Quay lại danh sách")}
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={downloadMemo}>
-              <Download className="size-3.5" /> Tải báo cáo
+              <Download className="size-3.5" /> {tv("Tải báo cáo")}
             </Button>
             <Button size="sm" className="gap-1.5 text-xs">
-              <FileEdit className="size-3.5" /> Chỉnh sửa hồ sơ
+              <FileEdit className="size-3.5" /> {tv("Chỉnh sửa hồ sơ")}
             </Button>
             <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground">
               <MoreVertical className="size-4" />
@@ -939,15 +951,15 @@ export default function CasePage() {
           ))}
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-muted-foreground">Mã hồ sơ:</span>
+          <span className="text-muted-foreground">{tv("Mã hồ sơ:")}</span>
           <span className="font-mono font-bold text-foreground">{caseDetail.case_id}</span>
           <Badge
             variant={canDecide ? "warning" : caseDetail.state === "APPROVED" ? "success" : "navy"}
             className="rounded-sm"
           >
-            {caseDetail.state === "ANALYZING" ? "Đang thẩm định"
-              : caseDetail.state === "READY_FOR_REVIEW" ? "Sẵn sàng phê duyệt"
-              : caseDetail.state === "APPROVED" ? "Đã phê duyệt"
+            {caseDetail.state === "ANALYZING" ? tv("Đang thẩm định")
+              : caseDetail.state === "READY_FOR_REVIEW" ? tv("Sẵn sàng phê duyệt")
+              : caseDetail.state === "APPROVED" ? tv("Đã phê duyệt")
               : caseDetail.state}
           </Badge>
         </div>
@@ -972,9 +984,9 @@ export default function CasePage() {
                     className="rounded-full text-xs gap-1"
                   >
                     <span className="size-1.5 rounded-full bg-current opacity-70 inline-block" />
-                    {caseDetail.state === "ANALYZING" ? "Đang thẩm định"
-                      : caseDetail.state === "READY_FOR_REVIEW" ? "Sẵn sàng phê duyệt"
-                      : caseDetail.state === "APPROVED" ? "Đã phê duyệt"
+                    {caseDetail.state === "ANALYZING" ? tv("Đang thẩm định")
+                      : caseDetail.state === "READY_FOR_REVIEW" ? tv("Sẵn sàng phê duyệt")
+                      : caseDetail.state === "APPROVED" ? tv("Đã phê duyệt")
                       : caseDetail.state}
                   </Badge>
                 </div>
@@ -984,26 +996,26 @@ export default function CasePage() {
                 </p>
                 {/* Meta row */}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                  <span>Mã KH: <span className="font-semibold text-foreground">KH{caseDetail.case_id.slice(-6)}</span></span>
+                  <span>{tv("Mã KH:")} <span className="font-semibold text-foreground">KH{caseDetail.case_id.slice(-6)}</span></span>
                   <span>MST: <span className="font-semibold text-foreground">0101234567</span></span>
-                  <span>Ngày tạo hồ sơ: <span className="font-semibold text-foreground">16/05/2025</span></span>
-                  <span>CBTD tạo: <span className="font-semibold text-foreground">Nguyễn Văn An</span></span>
+                  <span>{tv("Ngày tạo hồ sơ:")} <span className="font-semibold text-foreground">16/05/2025</span></span>
+                  <span>{tv("CBTD tạo:")} <span className="font-semibold text-foreground">{tv("Nguyễn Văn An")}</span></span>
                 </div>
               </div>
 
               {/* Right metadata strip */}
               <div className="flex items-start gap-6 flex-wrap border-l border-border pl-6">
                 {[
-                  { label: "Khách hàng",      value: caseDetail.customer_id },
-                  { label: "Hạn mức đề nghị", value: amountVnd != null ? `${(amountVnd / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 3 })} tỷ VND` : "—" },
-                  { label: "Xếp loại sơ bộ",  value: null, isXepLoai: true },
-                  { label: "Ngành",            value: "Sản xuất bao bì" },
-                  { label: "RM phụ trách",     value: "Nguyễn Văn An", sub: "CBTD" },
+                  { label: tv("Khách hàng"),      value: caseDetail.customer_id },
+                  { label: tv("Hạn mức đề nghị"), value: formatVnd(amountVnd, lang) },
+                  { label: tv("Xếp loại sơ bộ"),  value: null, isXepLoai: true },
+                  { label: tv("Ngành"),            value: tv("Sản xuất bao bì") },
+                  { label: tv("RM phụ trách"),     value: tv("Nguyễn Văn An"), sub: tv("CBTD") },
                 ].map(({ label, value, isXepLoai, sub }) => (
                   <div key={label} className="flex flex-col gap-0.5 min-w-[100px]">
                     <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
                     {isXepLoai ? (
-                      <Badge variant="warning" className="rounded-sm w-fit mt-0.5">Trung bình</Badge>
+                      <Badge variant="warning" className="rounded-sm w-fit mt-0.5">{tv("Trung bình")}</Badge>
                     ) : (
                       <>
                         <p className="text-sm font-bold text-foreground">{value}</p>
@@ -1025,10 +1037,10 @@ export default function CasePage() {
             <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="size-16 rounded-full bg-[var(--color-navy-50)] flex items-center justify-center text-3xl">🤖</div>
               <div className="text-center">
-                <p className="text-base font-bold text-foreground mb-1">Hồ sơ đã có đủ dữ liệu</p>
-                <p className="text-sm text-muted-foreground">Chưa chạy phân tích AI. Nhấn bên dưới để bắt đầu.</p>
+                <p className="text-base font-bold text-foreground mb-1">{tv("Hồ sơ đã có đủ dữ liệu")}</p>
+                <p className="text-sm text-muted-foreground">{tv("Chưa chạy phân tích AI. Nhấn bên dưới để bắt đầu.")}</p>
               </div>
-              <Button onClick={runAnalyze}>Bắt đầu phân tích AI</Button>
+              <Button onClick={runAnalyze}>{tv("Bắt đầu phân tích AI")}</Button>
             </CardContent>
           </Card>
         ) : (
@@ -1088,14 +1100,14 @@ export default function CasePage() {
                     title={canDecide ? undefined : staleTitle}
                     className="gap-1.5"
                   >
-                    <RefreshCw className="size-3.5" /> Chạy lại phân tích
+                    <RefreshCw className="size-3.5" /> {tv("Chạy lại phân tích")}
                   </Button>
                   {log.length > 0 && (
                     <span className="text-xs text-muted-foreground">{log[log.length - 1]}</span>
                   )}
                   {openConflicts.length > 0 && (
                     <Badge variant="warning" className="rounded-sm">
-                      {openConflicts.length} xung đột chưa giải quyết
+                      {tv("{n} xung đột chưa giải quyết", { n: openConflicts.length })}
                     </Badge>
                   )}
                 </div>
@@ -1134,7 +1146,7 @@ export default function CasePage() {
                 ) : (
                   <Card className="py-0 gap-0">
                     <CardContent className="p-8 text-center">
-                      <p className="text-sm text-muted-foreground">Chưa có quyết định. Chạy phân tích trước.</p>
+                      <p className="text-sm text-muted-foreground">{tv("Chưa có quyết định. Chạy phân tích trước.")}</p>
                     </CardContent>
                   </Card>
                 )}
@@ -1161,7 +1173,7 @@ export default function CasePage() {
                               <td className="px-4 py-2 tabular-nums">{e.seq}</td>
                               <td className="px-4 py-2">{e.event_type}</td>
                               <td className="px-4 py-2 font-mono">{e.actor.type}:{e.actor.id}</td>
-                              <td className="px-4 py-2 tabular-nums">{new Date(e.timestamp).toLocaleString("vi-VN")}</td>
+                              <td className="px-4 py-2 tabular-nums">{new Date(e.timestamp).toLocaleString(lang === "en" ? "en-GB" : "vi-VN")}</td>
                             </tr>
                           ))}
                         </tbody>

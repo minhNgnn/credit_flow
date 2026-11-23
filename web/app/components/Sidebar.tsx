@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, LayoutDashboard, FolderOpen, Bot, CheckSquare, BarChart2, Settings, FileUp, Activity } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useI18n } from "../lib/i18n";
+import { LanguageToggle } from "./LanguageToggle";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -17,6 +19,7 @@ interface NavItem {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { t } = useI18n();
   const onCasePage  = pathname?.startsWith("/cases/") ?? false;
   const onQueuePage = pathname === "/";
   const onLmsPage   = pathname === "/lms";
@@ -31,13 +34,13 @@ export function Sidebar() {
     },
     {
       icon: <FileUp className="size-4.5" />,
-      label: "LMS — Tiếp nhận hồ sơ",
+      label: t("nav.lms"),
       href: "/lms",
       active: onLmsPage,
     },
     {
       icon: <FolderOpen className="size-4.5" />,
-      label: "Hồ sơ tín dụng",
+      label: t("nav.creditCases"),
       disabled: true,
       hasChildren: true,
     },
@@ -47,12 +50,12 @@ export function Sidebar() {
       active: onCasePage,
       hasChildren: true,
       children: onCasePage && pathname
-        ? [{ label: pathname.split("/").pop() ?? "Hồ sơ", href: pathname, active: true }]
+        ? [{ label: pathname.split("/").pop() ?? t("nav.caseFallback"), href: pathname, active: true }]
         : [],
     },
     {
       icon: <CheckSquare className="size-4.5" />,
-      label: "Decision Hub",
+      label: t("nav.decisionHub"),
       disabled: true,
     },
     {
@@ -63,13 +66,13 @@ export function Sidebar() {
     },
     {
       icon: <BarChart2 className="size-4.5" />,
-      label: "Báo cáo",
+      label: t("nav.reportsVi"),
       disabled: true,
       hasChildren: true,
     },
     {
       icon: <Settings className="size-4.5" />,
-      label: "Cài đặt",
+      label: t("nav.settingsVi"),
       disabled: true,
     },
   ];
@@ -89,7 +92,7 @@ export function Sidebar() {
             SHBExpert AI
           </p>
           <p className="text-[10px] leading-tight" style={{ color: "rgba(255,255,255,0.55)" }}>
-            Nền tảng tín dụng doanh nghiệp
+            {t("nav.platform")}
           </p>
         </div>
       </div>
@@ -118,13 +121,13 @@ export function Sidebar() {
                   active && "active",
                   disabled && "disabled"
                 )}
-                title={disabled ? "Sắp có" : undefined}
+                title={disabled ? t("nav.comingSoon") : undefined}
               >
                 <span className="shrink-0">{icon}</span>
                 <span className="flex-1">{label}</span>
                 {hasChildren && <ChevronRight className={cn("size-3.5 opacity-50", active && "rotate-90")} />}
                 {disabled && (
-                  <span className="sidebar-nav-badge text-[9px] px-1.5 py-0.5 rounded-full font-bold">Sắp có</span>
+                  <span className="sidebar-nav-badge text-[9px] px-1.5 py-0.5 rounded-full font-bold">{t("nav.comingSoon")}</span>
                 )}
               </div>
             )}
@@ -154,12 +157,15 @@ export function Sidebar() {
 
       {/* User footer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex justify-center px-2 pt-2">
+          <LanguageToggle />
+        </div>
         <div className="sidebar-footer flex items-center gap-3 cursor-pointer hover:bg-[var(--color-navy-800)] transition-colors rounded-lg mx-2 mb-2 px-2 py-2">
           <div className="sidebar-avatar shrink-0">NA</div>
           <div className="flex-1 min-w-0">
-            <div className="sidebar-officer-name text-xs font-semibold truncate">CBTD: Nguyễn Văn An</div>
-            <div className="sidebar-officer-role text-[10px] truncate opacity-70">Phòng Khách hàng Doanh nghiệp</div>
-            <div className="text-[10px] opacity-50 truncate">Chi nhánh Hà Nội</div>
+            <div className="sidebar-officer-name text-xs font-semibold truncate">{t("nav.officerLine")}</div>
+            <div className="sidebar-officer-role text-[10px] truncate opacity-70">{t("nav.officerDept")}</div>
+            <div className="text-[10px] opacity-50 truncate">{t("nav.officerBranch")}</div>
           </div>
           <ChevronRight className="size-3.5 opacity-50 shrink-0" />
         </div>
@@ -167,7 +173,7 @@ export function Sidebar() {
         <button className="w-full flex items-center justify-center gap-2 py-2.5 text-xs opacity-50 hover:opacity-80 transition-opacity"
           style={{ color: "rgba(255,255,255,0.7)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <ChevronRight className="size-3.5 rotate-180" />
-          Thu gọn menu
+          {t("nav.collapse")}
         </button>
       </div>
     </aside>

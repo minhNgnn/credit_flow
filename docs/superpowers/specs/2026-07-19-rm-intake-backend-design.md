@@ -1,3 +1,29 @@
+> 🇬🇧 **English version first** · 🇻🇳 Bản tiếng Việt ở bên dưới (xem mục “Tiếng Việt”).
+
+# RM Case Intake — backend layer (slice 1) (English)
+
+> Design spec. The English section below summarises context, decisions and scope; the full original (Vietnamese) follows.
+
+**Date:** 2026-07-19 · **Branch:** `feat/lms-rm-upload` (from `main`) · **Status:** awaiting approval
+
+## 1. Context
+The system stores data for real (Postgres + MinIO, real reportlab-generated PDFs) but **the path into the database is fake**: `scripts/seed_case_c06.py` writes `documents` + `extracted_fields` directly and admits in its docstring that it stands in for the whole Document Processing Pipeline. `api/app/routers/cases.py` has only the read side — no endpoint lets an RM submit a case. This slice builds the missing link toward a real LOS.
+
+## 3. API contract (summary)
+A new router, `api/app/routers/intake.py` (write side), kept apart from `cases.py` (read side, already 350+ lines). Four endpoints reuse existing infrastructure unchanged (`upload_bytes()`, `transition_state()`, `emit_event()`, `REQUIRED_DOC_TYPES`):
+- `POST /cases` — create a case in `DRAFT`
+- `POST /cases/{case_id}/documents` — upload a document
+- `GET /cases/{case_id}/intake-status` — document checklist
+- `POST /cases/{case_id}/submit` — submit for appraisal
+
+**Key rules:** `doc_type` is chosen by the RM, never guessed (classification is slice 2); **write MinIO first, Postgres second** so a `documents` row never points to a missing object; no migration needed (only `cases` and `documents`, which already have the columns). Sections on write invariants, reused infrastructure, the slice-2 seam, verification, risks and decisions are in the Vietnamese section.
+
+---
+
+<a id="vi"></a>
+
+## 🇻🇳 Tiếng Việt
+
 # Tiếp nhận hồ sơ RM — tầng backend (lát 1)
 
 Ngày: 2026-07-19

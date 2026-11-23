@@ -1,6 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useI18n } from "../../lib/i18n";
 
 const COLORS: Record<string, string> = {
   READY_FOR_REVIEW: "#00853E",
@@ -10,9 +11,10 @@ const COLORS: Record<string, string> = {
 };
 
 export default function CaseStateDonut({ cases_by_state }: { cases_by_state: Record<string, number> }) {
+  const { tv } = useI18n();
   const data = Object.entries(cases_by_state).map(([state, value]) => ({ name: state, value }));
   const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return <div className="text-sm text-muted-foreground">Chưa có hồ sơ.</div>;
+  if (total === 0) return <div className="text-sm text-muted-foreground">{tv("Chưa có hồ sơ.")}</div>;
   return (
     <div>
       <div className="h-48">

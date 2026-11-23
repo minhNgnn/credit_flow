@@ -10,6 +10,7 @@ import { Badge } from "../../components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Separator } from "../../components/ui/separator";
 import { cn } from "../../lib/utils";
+import { useI18n } from "../../lib/i18n";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -89,10 +90,11 @@ function scoreVerdict(s: number): string {
 // ─── KYC Card ─────────────────────────────────────────────────────────────────
 
 function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
+  const { tv } = useI18n();
   return (
     <Card className="py-0 gap-0 flex-1 min-w-0 overflow-hidden">
       <CardHeader className="pt-4 pb-3 px-5">
-        <CardTitle className="text-sm">1. KYC &amp; Chân dung</CardTitle>
+        <CardTitle className="text-sm">{tv("1. KYC & Chân dung")}</CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="p-0">
@@ -102,15 +104,15 @@ function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Building className="size-3.5 text-muted-foreground shrink-0" />
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Thông tin pháp lý</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{tv("Thông tin pháp lý")}</p>
             </div>
             <dl className="flex flex-col gap-2">
               {[
-                { k: "Loại hình",       v: MOCK_COMPANY.type },
-                { k: "Ngày thành lập",  v: MOCK_COMPANY.founded },
-                { k: "Vốn điều lệ",     v: fmtVnd(MOCK_COMPANY.charter_vnd) },
-                { k: "Địa chỉ trụ sở",  v: MOCK_COMPANY.address },
-                { k: "Điện thoại",      v: MOCK_COMPANY.phone },
+                { k: tv("Loại hình"),       v: MOCK_COMPANY.type },
+                { k: tv("Ngày thành lập"),  v: MOCK_COMPANY.founded },
+                { k: tv("Vốn điều lệ"),     v: fmtVnd(MOCK_COMPANY.charter_vnd) },
+                { k: tv("Địa chỉ trụ sở"),  v: MOCK_COMPANY.address },
+                { k: tv("Điện thoại"),      v: MOCK_COMPANY.phone },
                 { k: "Email",           v: MOCK_COMPANY.email },
               ].map(({ k, v }) => (
                 <div key={k} className="grid grid-cols-[auto_1fr] gap-x-2">
@@ -125,7 +127,7 @@ function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Users className="size-3.5 text-muted-foreground shrink-0" />
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Đại diện pháp luật</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{tv("Đại diện pháp luật")}</p>
             </div>
             <div className="flex flex-col gap-4">
               {MOCK_PERSONS.map((person) => (
@@ -135,12 +137,12 @@ function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-foreground">{person.name}</p>
-                    <p className="text-[11px] text-muted-foreground">Chức vụ: {person.role}</p>
-                    <p className="text-[11px] text-muted-foreground">Sinh ngày: {person.dob}</p>
+                    <p className="text-[11px] text-muted-foreground">{tv("Chức vụ")}: {tv(person.role)}</p>
+                    <p className="text-[11px] text-muted-foreground">{tv("Sinh ngày")}: {person.dob}</p>
                     <p className="text-[11px] text-muted-foreground">CCCD: {person.cccd}</p>
                     <div className="flex items-center gap-1 mt-1.5">
                       <CheckCircle2 className="size-3 text-[var(--color-success-600)] shrink-0" />
-                      <span className="text-[11px] font-semibold text-[var(--color-success-600)]">Đã xác thực eKYC</span>
+                      <span className="text-[11px] font-semibold text-[var(--color-success-600)]">{tv("Đã xác thực eKYC")}</span>
                     </div>
                   </div>
                 </div>
@@ -152,15 +154,15 @@ function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <ClipboardList className="size-3.5 text-muted-foreground shrink-0" />
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Chân dung doanh nghiệp</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{tv("Chân dung doanh nghiệp")}</p>
             </div>
             <dl className="flex flex-col gap-2">
               {[
-                { k: "Ngành nghề chính",   v: MOCK_PROFILE.industry },
-                { k: "Mã ngành (VSIC)",    v: MOCK_PROFILE.vsic },
-                { k: "Quy mô lao động",    v: `${MOCK_PROFILE.employees} người` },
+                { k: tv("Ngành nghề chính"),   v: MOCK_PROFILE.industry },
+                { k: tv("Mã ngành (VSIC)"),    v: MOCK_PROFILE.vsic },
+                { k: tv("Quy mô lao động"),    v: `${MOCK_PROFILE.employees} người` },
                 { k: "Thời gian quan hệ",  v: MOCK_PROFILE.relationship },
-                { k: "Doanh số bình quân", v: MOCK_PROFILE.avg_revenue },
+                { k: tv("Doanh số bình quân"), v: MOCK_PROFILE.avg_revenue },
               ].map(({ k, v }) => (
                 <div key={k} className="grid grid-cols-[auto_1fr] gap-x-2">
                   <dt className="text-[11px] text-muted-foreground font-medium whitespace-nowrap">{k}</dt>
@@ -169,11 +171,11 @@ function KYCCard({ caseDetail }: { caseDetail: CaseDetail }) {
               ))}
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[11px] text-muted-foreground font-medium">CIC</span>
-                <Badge variant="success" className="rounded-full text-[10px]">Tốt</Badge>
+                <Badge variant="success" className="rounded-full text-[10px]">{tv("Tốt")}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground font-medium">KYC</span>
-                <Badge variant="success" className="rounded-full text-[10px]">Đã hoàn tất</Badge>
+                <Badge variant="success" className="rounded-full text-[10px]">{tv("Đã hoàn tất")}</Badge>
               </div>
             </dl>
           </div>
@@ -203,6 +205,7 @@ function getTimelineActive(state: string): number {
 }
 
 function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
+  const { tv } = useI18n();
   const amountVnd = caseDetail.requested_facility?.amount_vnd as number | undefined;
   const tenorMonths = caseDetail.requested_facility?.tenor_months as number | undefined;
   const purpose = caseDetail.requested_facility?.purpose as string | undefined;
@@ -222,19 +225,19 @@ function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
       <CardContent className="p-4 flex flex-col gap-4">
         {/* Loan details */}
         <div>
-          <p className="text-[11px] text-muted-foreground font-semibold mb-1">Mục đích vay</p>
+          <p className="text-[11px] text-muted-foreground font-semibold mb-1">{tv("Mục đích vay")}</p>
           <p className="text-xs text-foreground leading-snug mb-3">
-            {purpose ?? "Bổ sung vốn lưu động phục vụ sản xuất kinh doanh và mua nguyên vật liệu."}
+            {purpose ?? tv("Bổ sung vốn lưu động phục vụ sản xuất kinh doanh và mua nguyên vật liệu.")}
           </p>
 
-          <p className="text-[11px] text-muted-foreground font-semibold mb-1">Số tiền đề nghị cấp tín dụng</p>
+          <p className="text-[11px] text-muted-foreground font-semibold mb-1">{tv("Số tiền đề nghị cấp tín dụng")}</p>
           {amountVnd != null ? (
             <>
               <p className="text-xl font-extrabold text-[var(--color-navy-700)] font-[var(--font-display)] leading-tight">
                 {fmtNum(amountVnd)} VND
               </p>
               <p className="text-[11px] text-[var(--color-navy-600)] mt-0.5">
-                ({amountVnd === 15_000_000_000 ? "Mười lăm tỷ đồng" : fmtVnd(amountVnd)})
+                ({amountVnd === 15_000_000_000 ? tv("Mười lăm tỷ đồng") : fmtVnd(amountVnd)})
               </p>
             </>
           ) : (
@@ -243,13 +246,13 @@ function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
 
           <div className="flex flex-col gap-1.5 mt-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Thời hạn vay</span>
-              <span className="font-bold text-foreground">{tenorMonths ?? 24} tháng</span>
+              <span className="text-muted-foreground">{tv("Thời hạn vay")}</span>
+              <span className="font-bold text-foreground">{tenorMonths ?? 24} {tv("tháng")}</span>
             </div>
             <div className="flex items-start justify-between text-xs gap-2">
-              <span className="text-muted-foreground whitespace-nowrap">Loại sản phẩm</span>
+              <span className="text-muted-foreground whitespace-nowrap">{tv("Loại sản phẩm")}</span>
               <span className="font-semibold text-[var(--color-navy-600)] text-right leading-snug">
-                {caseDetail.product ?? "Cho vay bổ sung vốn lưu động"}
+                {caseDetail.product ?? tv("Cho vay bổ sung vốn lưu động")}
               </span>
             </div>
           </div>
@@ -259,7 +262,7 @@ function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
 
         {/* Vertical timeline */}
         <div>
-          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mb-3">Tiến trình hồ sơ</p>
+          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mb-3">{tv("Tiến trình hồ sơ")}</p>
           <div className="flex flex-col">
             {TIMELINE_STEPS.map((step, i) => {
               const isDone    = i < activeStep;
@@ -295,13 +298,13 @@ function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
                       isActive && "text-[var(--color-navy-700)] font-bold",
                       isPending && "text-muted-foreground",
                     )}>
-                      {step}
+                      {tv(step)}
                     </p>
                     {mockTimestamps[i] && (
                       <p className="text-[10px] text-muted-foreground mt-0.5">{mockTimestamps[i]}</p>
                     )}
                     {mockTimestamps[i] && (
-                      <p className="text-[10px] text-muted-foreground">Nguyễn Văn An</p>
+                      <p className="text-[10px] text-muted-foreground">{tv("Nguyễn Văn An")}</p>
                     )}
                   </div>
                 </div>
@@ -317,6 +320,7 @@ function CreditRequestCard({ caseDetail }: { caseDetail: CaseDetail }) {
 // ─── Financial table ──────────────────────────────────────────────────────────
 
 function FinancialTable({ dscrReal }: { dscrReal: number | undefined }) {
+  const { tv } = useI18n();
   // Inject real DSCR value if available
   const rows = MOCK_FINANCIAL_TABLE.map((r) =>
     r.label === "DSCR (TB)" && dscrReal != null
@@ -332,14 +336,14 @@ function FinancialTable({ dscrReal }: { dscrReal: number | undefined }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-bold text-foreground">Hiệu quả kinh doanh</p>
-        <p className="text-[10px] text-muted-foreground">Số liệu BCTC kiểm toán &nbsp;·&nbsp; Đơn vị: VND</p>
+        <p className="text-xs font-bold text-foreground">{tv("Hiệu quả kinh doanh")}</p>
+        <p className="text-[10px] text-muted-foreground">{tv("Số liệu BCTC kiểm toán \u00a0·\u00a0 Đơn vị: VND")}</p>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-muted">
-              <th className="px-3 py-2 text-left font-bold text-muted-foreground whitespace-nowrap">Chỉ tiêu</th>
+              <th className="px-3 py-2 text-left font-bold text-muted-foreground whitespace-nowrap">{tv("Chỉ tiêu")}</th>
               {["2022", "2023", "2024", "TTM 04/2025"].map((y) => (
                 <th key={y} className="px-3 py-2 text-right font-bold text-muted-foreground whitespace-nowrap">{y}</th>
               ))}
@@ -348,7 +352,7 @@ function FinancialTable({ dscrReal }: { dscrReal: number | undefined }) {
           <tbody>
             {rows.map((r, i) => (
               <tr key={r.label} className={cn("border-t border-border", i % 2 === 1 && "bg-muted/30")}>
-                <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap">{r.label}</td>
+                <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap">{tv(r.label)}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-foreground">{cell(r.y22, r.isRatio)}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-foreground">{cell(r.y23, r.isRatio)}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-foreground font-semibold">{cell(r.y24, r.isRatio)}</td>
@@ -361,7 +365,7 @@ function FinancialTable({ dscrReal }: { dscrReal: number | undefined }) {
         </table>
       </div>
       <p className="text-[10px] text-muted-foreground mt-1.5 italic">
-        Ghi chú: TTM 04/2025 là số liệu lũy kế 12 tháng đến 30/04/2025
+        {tv("Ghi chú: TTM 04/2025 là số liệu lũy kế 12 tháng đến 30/04/2025")}
       </p>
     </div>
   );
@@ -370,6 +374,7 @@ function FinancialTable({ dscrReal }: { dscrReal: number | undefined }) {
 // ─── Collateral section ───────────────────────────────────────────────────────
 
 function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
+  const { tv } = useI18n();
   const ltv = ltvPct ?? Math.round((1 / (MOCK_COLLATERAL.value_vnd / MOCK_COLLATERAL.value_vnd)) * 100);
   const displayLtv = ltvPct != null ? `${ltvPct}%` : "66,7%";
   const ltvColor = (ltvPct ?? 67) < 65
@@ -389,15 +394,15 @@ function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
     <div className="flex gap-4 flex-wrap">
       {/* Collateral details */}
       <div className="flex-1 min-w-[200px]">
-        <p className="text-xs font-bold text-foreground mb-2">Tài sản bảo đảm</p>
+        <p className="text-xs font-bold text-foreground mb-2">{tv("Tài sản bảo đảm")}</p>
         <dl className="flex flex-col gap-2">
           {[
-            { k: "Loại tài sản",             v: MOCK_COLLATERAL.type, normal: true },
-            { k: "Giá trị định giá (BC TĐG)", v: fmtNum(totalVnd) + " VND", normal: true },
-            { k: "Ngày định giá",             v: MOCK_COLLATERAL.date, normal: true },
+            { k: tv("Loại tài sản"),             v: MOCK_COLLATERAL.type, normal: true },
+            { k: tv("Giá trị định giá (BC TĐG)"), v: fmtNum(totalVnd) + " VND", normal: true },
+            { k: tv("Ngày định giá"),             v: MOCK_COLLATERAL.date, normal: true },
             { k: "LTV snapshot",              v: displayLtv, colored: ltvColor },
-            { k: "Tỷ lệ cho vay đề xuất",    v: `${MOCK_COLLATERAL.proposed_pct.toFixed(1)}%`, normal: true },
-            { k: "Giá trị TSBD sau haircut",  v: fmtNum(MOCK_COLLATERAL.haircut_vnd) + " VND", normal: true },
+            { k: tv("Tỷ lệ cho vay đề xuất"),    v: `${MOCK_COLLATERAL.proposed_pct.toFixed(1)}%`, normal: true },
+            { k: tv("Giá trị TSBD sau haircut"),  v: fmtNum(MOCK_COLLATERAL.haircut_vnd) + " VND", normal: true },
           ].map(({ k, v, colored, normal }) => (
             <div key={k} className="flex items-start justify-between gap-3">
               <dt className="text-[11px] text-muted-foreground font-medium whitespace-nowrap shrink-0">{k}</dt>
@@ -411,7 +416,7 @@ function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
 
       {/* Donut chart */}
       <div className="flex-none w-[200px]">
-        <p className="text-xs font-bold text-foreground mb-2">Cơ cấu tài sản bảo đảm</p>
+        <p className="text-xs font-bold text-foreground mb-2">{tv("Cơ cấu tài sản bảo đảm")}</p>
         <div className="relative h-[140px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -437,7 +442,7 @@ function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
             <p className="text-center text-xs font-extrabold text-foreground">
               {(totalVnd / 1_000_000_000).toFixed(1)}
             </p>
-            <p className="text-center text-[10px] text-muted-foreground">tỷ VND</p>
+            <p className="text-center text-[10px] text-muted-foreground">{tv("tỷ VND")}</p>
           </div>
         </div>
         {/* Legend */}
@@ -446,14 +451,14 @@ function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
             <div key={m.name} className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <div className="size-2 rounded-full shrink-0" style={{ background: m.color }} />
-                <span className="text-[10px] text-muted-foreground">{m.name}</span>
+                <span className="text-[10px] text-muted-foreground">{tv(m.name)}</span>
               </div>
               <span className="text-[10px] font-bold text-foreground">{m.pct}%</span>
             </div>
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground mt-2">
-          Tổng giá trị định giá: {fmtNum(totalVnd)} VND
+          {tv("Tổng giá trị định giá")}: {fmtNum(totalVnd)} VND
         </p>
       </div>
     </div>
@@ -463,6 +468,7 @@ function CollateralSection({ ltvPct }: { ltvPct: number | null }) {
 // ─── Score summary sidebar ────────────────────────────────────────────────────
 
 function ScoreSidebar({ compositePct }: { compositePct: number | null }) {
+  const { tv } = useI18n();
   const scores = SCORE_DIMENSIONS;
   const composite = compositePct ?? Math.round(scores.reduce((s, d) => s + d.score, 0) / scores.length);
   const overall = scoreVerdict(composite);
@@ -470,7 +476,7 @@ function ScoreSidebar({ compositePct }: { compositePct: number | null }) {
   return (
     <Card className="py-0 gap-0 w-full">
       <CardHeader className="pt-4 pb-3 px-4">
-        <CardTitle className="text-sm">Tóm tắt đánh giá sơ bộ</CardTitle>
+        <CardTitle className="text-sm">{tv("Tóm tắt đánh giá sơ bộ")}</CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="p-4 flex flex-col gap-2.5">
@@ -480,12 +486,12 @@ function ScoreSidebar({ compositePct }: { compositePct: number | null }) {
             <div key={d.label} className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-muted-foreground shrink-0">{d.icon}</span>
-                <span className="text-[11px] text-muted-foreground font-medium truncate">{d.label}</span>
+                <span className="text-[11px] text-muted-foreground font-medium truncate">{tv(d.label)}</span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-xs font-bold text-foreground tabular-nums">{d.score}/100</span>
                 <Badge variant={verdictVariant(v)} className="rounded-sm text-[10px] px-1.5 py-0">
-                  {v}
+                  {tv(v)}
                 </Badge>
               </div>
             </div>
@@ -497,16 +503,16 @@ function ScoreSidebar({ compositePct }: { compositePct: number | null }) {
         {/* Summary footer */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-0.5">
-            <p className="text-[10px] text-muted-foreground font-semibold">Xếp loại sơ bộ</p>
+            <p className="text-[10px] text-muted-foreground font-semibold">{tv("Xếp loại sơ bộ")}</p>
             <p
               className="text-lg font-extrabold font-[var(--font-display)]"
               style={{ color: overall === "Tốt" ? "var(--color-success-600)" : overall === "Trung bình" ? "var(--color-warning-600)" : "var(--color-danger-600)" }}
             >
-              {overall}
+              {tv(overall)}
             </p>
           </div>
           <div className="flex flex-col gap-0.5 text-right">
-            <p className="text-[10px] text-muted-foreground font-semibold">Điểm tổng hợp</p>
+            <p className="text-[10px] text-muted-foreground font-semibold">{tv("Điểm tổng hợp")}</p>
             <p className="text-lg font-extrabold text-[var(--color-navy-700)] font-[var(--font-display)]">
               {composite}<span className="text-sm font-bold text-muted-foreground">/100</span>
             </p>
