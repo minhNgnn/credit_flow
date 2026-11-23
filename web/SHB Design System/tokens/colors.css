@@ -1,0 +1,90 @@
+/* SHB Design System — Color tokens
+   Brand colors sampled directly from the SHB logo:
+   navy  #2F2E79 (wordmark) · orange #F37021 (mark)
+*/
+:root {
+  /* Brand — Navy */
+  --color-navy-900: #16153F;
+  --color-navy-800: #201F5C;
+  --color-navy-700: #2F2E79; /* logo navy */
+  --color-navy-600: #3E3D93;
+  --color-navy-500: #5250AC;
+  --color-navy-300: #9998CC;
+  --color-navy-100: #E3E2F3;
+  --color-navy-50:  #F2F1FA;
+
+  /* Brand — Orange */
+  --color-orange-800: #B3480E;
+  --color-orange-700: #D65C15;
+  --color-orange-600: #F37021; /* logo orange */
+  --color-orange-500: #F68A47;
+  --color-orange-300: #FAB98C;
+  --color-orange-100: #FCE3D2;
+  --color-orange-50:  #FDF1E9;
+
+  /* Neutrals — cool gray, tinted toward navy */
+  --color-gray-900: #1A1B27;
+  --color-gray-800: #2B2C3C;
+  --color-gray-700: #40415A;
+  --color-gray-600: #5B5C77;
+  --color-gray-500: #797A95;
+  --color-gray-400: #9EA0B5;
+  --color-gray-300: #C4C5D3;
+  --color-gray-200: #DEDFE8;
+  --color-gray-100: #EEEFF4;
+  --color-gray-50:  #F7F8FA;
+  --color-white: #FFFFFF;
+
+  /* Semantic status — "safe, sustainable, efficient" reads as measured, not flashy */
+  --color-success-700: #14603F;
+  --color-success-600: #1E8E5A;
+  --color-success-100: #DEF3E9;
+  --color-warning-700: #8A5A05;
+  --color-warning-600: #C4870F;
+  --color-warning-100: #FBEDD3;
+  --color-danger-700:  #9A2A2A;
+  --color-danger-600:  #D93B3B;
+  --color-danger-100:  #FBE2E2;
+  --color-info-600: var(--color-navy-500);
+  --color-info-100: var(--color-navy-50);
+
+  /* Semantic aliases — use these in product UI, not raw palette values.
+     SHB's real-world brand lead is orange (shb.com.vn wordmark, CTAs, tab
+     underlines, links); navy is the secondary/structural color (sidebar,
+     header text, deep surfaces). */
+  --brand-primary: var(--color-orange-600);
+  --brand-primary-hover: var(--color-orange-700);
+  --brand-accent: var(--color-navy-700);
+  --brand-accent-hover: var(--color-navy-800);
+
+  --surface-page: var(--color-gray-50);
+  --surface-card: var(--color-white);
+  --surface-sunken: var(--color-gray-100);
+  --surface-inverse: var(--color-navy-900);
+  --surface-brand: var(--color-navy-700);
+  --surface-accent-soft: var(--color-orange-50);
+  --surface-overlay: rgba(22, 21, 63, 0.55);
+
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --text-tertiary: var(--color-gray-400);
+  --text-on-brand: var(--color-white);
+  --text-on-accent: var(--color-white);
+  --text-link: var(--color-orange-600);
+  --text-link-hover: var(--color-orange-700);
+
+  --border-subtle: var(--color-gray-200);
+  --border-default: var(--color-gray-300);
+  --border-strong: var(--color-gray-500);
+  --border-focus: var(--color-navy-500);
+  --border-accent: var(--color-orange-600);
+
+  --status-success-fg: var(--color-success-700);
+  --status-success-bg: var(--color-success-100);
+  --status-warning-fg: var(--color-warning-700);
+  --status-warning-bg: var(--color-warning-100);
+  --status-danger-fg: var(--color-danger-700);
+  --status-danger-bg: var(--color-danger-100);
+  --status-info-fg: var(--color-navy-700);
+  --status-info-bg: var(--color-info-100);
+}

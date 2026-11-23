@@ -1,0 +1,10 @@
+<!-- @dsCard group="Colors" viewport="700x120" name="Semantic Status" subtitle="Success · warning · danger · info" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:16px;font-family:var(--font-body);background:var(--surface-card);display:flex;gap:10px;}
+  .pill{flex:1;border-radius:var(--radius-md);padding:14px;font-size:13px;font-weight:600;}
+</style>
+<div class="pill" style="background:var(--status-success-bg);color:var(--status-success-fg)">Success — Payment settled</div>
+<div class="pill" style="background:var(--status-warning-bg);color:var(--status-warning-fg)">Warning — Review needed</div>
+<div class="pill" style="background:var(--status-danger-bg);color:var(--status-danger-fg)">Danger — Action failed</div>
+<div class="pill" style="background:var(--status-info-bg);color:var(--status-info-fg)">Info — In progress</div>

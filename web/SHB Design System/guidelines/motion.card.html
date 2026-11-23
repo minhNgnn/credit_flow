@@ -1,0 +1,11 @@
+<!-- @dsCard group="Brand" viewport="700x160" name="Motion" subtitle="Easing and duration tokens" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:16px;font-family:var(--font-mono);font-size:11px;background:var(--surface-card);display:flex;gap:16px;align-items:center;}
+  .dot{width:16px;height:16px;border-radius:50%;background:var(--brand-accent);}
+  .track{width:180px;height:16px;background:var(--surface-sunken);border-radius:99px;position:relative;overflow:hidden;}
+  .dot{position:absolute;left:0;animation:move 1.8s var(--ease-standard) infinite alternate;}
+  @keyframes move{to{left:164px;}}
+</style>
+<div class="track"><div class="dot"></div></div>
+<div>ease-standard · 180–260ms<br>no bounce/overshoot — calm, confident motion</div>
