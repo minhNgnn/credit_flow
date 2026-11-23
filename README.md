@@ -1,0 +1,120 @@
+# SHBExpert Flow — dashmint_ai
+
+Hệ thống **SHBExpert Flow** là không gian làm việc thẩm định tín dụng SME (Synthetic, phục vụ demo/cuộc thi). Một Orchestrator lập kế hoạch và giao việc cho các expert agent, các agent phản biện có cấu trúc, rồi hợp nhất thành một gói khuyến nghị **có bằng chứng** cho Credit Officer.
+
+> ⚠️ **Lưu ý quản trị:** Mọi checklist, chính sách, ngưỡng, hard gate, trọng số scorecard và luồng phê duyệt trong hệ thống này là **mô phỏng phục vụ cuộc thi**, không phải quy trình hoặc khẩu vị rủi ro chính thức của SHB. Hệ thống chỉ tạo **khuyến nghị** cho Credit Officer; nó không phê duyệt, không ký và không giải ngân. Toàn bộ dữ liệu là **synthetic**.
+
+---
+
+## 1. Hệ thống gồm những gì
+
+Toàn bộ stack chạy **trọn vẹn trên một máy chủ Linux duy nhất** (Ubuntu 22.04, 4 vCPU / 16 GB RAM / 100 GB SSD, không cần GPU) bằng Docker Compose. Chỉ có hai đường cut qua biên VM: trình duyệt gọi vào proxy, và worker gọi ra LLM provider.
+
+### Service ứng dụng
+
+| Service | Cổng | Công nghệ | Vai trò |
+|---|---|---|---|
+| `web` | 3000 | Next.js / React | Dashboard 8 màn: Case Queue, Overview, Documents, Expert Council, Conflicts, Recommendation, Conditions, Audit. Hỗ trợ EN/VI i18n. |
+| `api` | 8000 | FastAPI | Chủ sở hữu CaseState. REST + SSE trạng thái chạy. Nơi duy nhất kiểm tra RBAC, validate schema, sinh event audit (append-only). |
+| `worker` | — | Python + LangGraph | Bộ não AI: Orchestrator + expert agents + deterministic functions. Nhận job qua Redis, không expose cổng. |
+| `tools-mock` | 8100 | FastAPI | API mock cho CIC, KYC/AML, valuation, LOS — có chế độ deterministic theo seed (fallback khi mất mạng). |
+
+### Hạ tầng
+
+| Service | Vai trò |
+|---|---|
+| `postgres:16` | CaseState, findings (versioned), tasks, conflicts, conditions, event log append-only, LangGraph checkpoint. |
+| `qdrant` | Vector store cho policy pack, legal checklist, industry knowledge (truy cập qua `mcp-rag`). |
+| `redis:7` | Job queue `api` → `worker`; pub/sub đẩy tiến độ agent lên SSE. |
+| `minio` | Object store S3-compatible: document theo version + hash (file không lưu trong Postgres). |
+| `mcp-*` | Lớp MCP: `mcp-deterministic`, `mcp-rag`, `mcp-external`, `mcp-state` — worker gọi tool qua đây. |
+
+Sơ đồ và dạng chi tiết hơn trong [`docs/architecture/overview.md`](docs/architecture/overview.md).
+
+---
+
+## 2. Chức năng chính
+
+- **Case Queue & Dashboard** — CO/RM quản lý và theo dõi hồ sơ đang thẩm định.
+- **Orchestrator + Expert Agents** — lập kế hoạch, phân việc song song giữa các agent:
+  - `collateral` (tài sản đảm bảo), `financial` (tài chính), `customer360` (khách hàng 360°), `policy` (chính sách) và các agent phản biện.
+- **Evidence Drawer** — mỗi claim trích nguồn tới đúng trang/vùng tài liệu (gửi kèm presigned URL MinIO).
+- **Expert Council & Conflicts** — hiển thị hội đồng chuyên gia và điểm bất đồng giữa các agent.
+- **Credit Memo & Scoring** — tóm tắt thẩm định + scorecard có trọng số (mô phỏng).
+- **Chat Orchestrator** — chat Q&A theo case, dẫn nguồn bằng chứng ngược về findings.
+- **Audit trail** — event log append-only, trace từng LLM/tool call.
+- **Fallback demo (PRD 14.4)** — `LLM_MOCK=true` chạy toàn luồng bằng kết quả deterministic theo seed, không cần key LLM hay internet.
+
+---
+
+## 3. Hướng dẫn sử dụng nhanh
+
+### Yêu cầu
+
+- Docker + Docker Compose v2
+- (Tuỳ chọn) `ANTHROPIC_API_KEY` hoặc `OPENAI_API_KEY` — nếu không có, đặt `LLM_MOCK=true`.
+
+### Bước 1 — Cấu hình môi trường
+
+```bash
+cp .env.example .env
+# Sửa .env: mật khẩu Postgres/MinIO, key LLM, hoặc giữ LLM_MOCK=true
+```
+
+### Bước 2 — Khởi động stack
+
+```bash
+docker compose up -d --build
+docker compose ps          # chờ tới khi mọi service báo healthy
+```
+
+Sau khi healthy, các cổng truy cập (mặc định bind localhost):
+- Dashboard: http://localhost:3000
+- API: http://localhost:8000  (health: `/health`)
+- MinIO console: http://localhost:9001
+
+### Bước 3 — Migrate & seed dữ liệu demo
+
+```bash
+bash scripts/bootstrap_deploy.sh
+```
+
+Script này (an toàn khi chạy lại nhiều lần) sẽ:
+1. `alembic upgrade head` — tạo schema trong Postgres.
+2. Seed policy pack vào Qdrant (`mcp-rag`).
+3. Seed reference data (collateral/legal checklist, customer360).
+4. Seed các golden case + synthetic case.
+
+### Bước 4 — Dùng hệ thống
+
+Mở http://localhost:3000, chọn một case trong **Case Queue**, vào màn **Overview** để xem tiến độ agent theo thời gian thực qua SSE, mở **Documents** để xem evidence drawer, **Expert Council** để xem phản biện, **Recommendation** để xem khuyến nghị + điều kiện kèm theo.
+
+---
+
+## 4. Cấu trúc thư mục
+
+```
+api/                 FastAPI — CaseState, REST, SSE, RBAC, event audit
+web/                 Next.js — dashboard 8 màn + i18n EN/VI
+worker/              LangGraph runtime — orchestrator, agents, chat
+mcp-*/               Lớp MCP (deterministic / rag / external / state)
+tools-mock/          API mock CIC/KYC/AML/valuation/LOS
+shared/              Models, schemas, constants dùng chung giữa api & worker
+scripts/             Migrate + seed (bootstrap_deploy.sh, seed_case_c0*.py, ...)
+postgres/            Init role bootstrap (least-privilege)
+infra/               Terraform (deploy VM tùy chọn)
+deploy/              Caddyfile + deploy.sh (chạy trên VM)
+docs/architecture/   overview.md · ai-architecture_v2.md · data-flow.md
+```
+
+---
+
+## 5. Производство / Deploy lên VM
+
+Có thể deploy lên một VM Linux bằng `deploy/deploy.sh` + `docker-compose.prod.yml` (Caddy làm proxy duy nhất). Xem hướng dẫn chi tiết trong comment đầu file `deploy/deploy.sh` và `docs/architecture/overview.md` mục 2.
+
+---
+
+## 6. Giấy phép / Phạm vi
+
+Dự án demo/_cuộc thi. **Không** kết nối Core Banking/LOS/CIC/AML thật, không phê duyệt, không giải ngân, không dữ liệu khách hàng thật. Toàn bộ dữ liệu synthetic.
