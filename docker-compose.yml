@@ -170,6 +170,11 @@ services:
       LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-xxxxxxxx}
       LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-xxxxxxxx}
       LANGFUSE_INIT_PROJECT_ROLE: ${LANGFUSE_INIT_PROJECT_ROLE:-ADMIN}
+      # Without an init user, the SHB org is created but no account is a member,
+      # so a freshly signed-up user sees an empty Organizations page.
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-admin@shb.local}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-SHB Admin}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-shbadmin123}
     ports:
       # Obs worktree: host 3202 (web nhánh gốc đã dùng 3001)
       - "127.0.0.1:3202:3000"
@@ -366,8 +371,9 @@ services:
       # trong .env sẽ override. LLM_MOCK mặc định false (demo thật); đặt
       # LLM_MOCK=true trong .env để chạy deterministic không cần key.
       LLM_MOCK: ${LLM_MOCK:-false}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-${FPT_API_KEY:-}}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-${FPT_BASE_URL:-}}
+      # adapter.py dùng OpenAI SDK nên cần tên OPENAI_*; nguồn thật là OpenRouter
+      OPENAI_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
       SLINK_MOCK_URL: ${SLINK_MOCK_URL:-http://slink-mock:8400}
       CORE_BANKING_URL: ${CORE_BANKING_URL:-http://core-banking-mock:8500}
     depends_on:
@@ -404,5 +410,5 @@ services:
     depends_on:
       api: { condition: service_healthy }
     ports:
-      - "3100:3000"
+      - "3101:3000"
     networks: [internal]
